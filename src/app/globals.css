@@ -1,16 +1,62 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400;1,700;1,900&display=swap');
+
 
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
-  
-  --primary: #003087;
-  --secondary: #0085CA;
-  --accent: #FF9F1C;
-  
-  --font-outfit: "Outfit", sans-serif;
+  /* ===== Osprey / NOAA Brand Palette ===== */
+  --primary: #003087;              /* NOAA Dark Blue */
+  --primary-foreground: #FFFFFF;
+
+  --secondary: #0085CA;             /* Process Light Blue */
+  --secondary-foreground: #FFFFFF;
+
+  --accent: #FF9F1C;                /* Osprey Amber */
+  --accent-foreground: #003087;
+
+  --font-lato: "Lato", sans-serif;
+
+
+  --background: #FFFFFF;
+  --foreground: #0F172A;
+
+  --card: #F8FAFC;
+  --card-foreground: #0F172A;
+
+  --popover: #FFFFFF;
+  --popover-foreground: #0F172A;
+
+  --muted: #F1F5F9;
+  --muted-foreground: #64748B;
+
+  --destructive: oklch(0.577 0.245 27.325);
+
+  --border: oklch(0.922 0 0);
+
+  --input: oklch(0.922 0 0);
+
+  --ring: #0085CA;
+
+  --chart-1: #003087;
+  --chart-2: #0085CA;
+  --chart-3: #FF9F1C;
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+
+  --radius: 0.625rem;
+
+  --sidebar: #003087;
+  --sidebar-foreground: #FFFFFF;
+  --sidebar-primary: #FF9F1C;
+  --sidebar-primary-foreground: #003087;
+  --sidebar-accent: #0085CA;
+  --sidebar-accent-foreground: #FFFFFF;
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: #FF9F1C;
 }
 
 @theme inline {
@@ -19,13 +65,49 @@
   --color-primary-brand: var(--primary);
   --color-secondary-brand: var(--secondary);
   --color-accent-brand: var(--accent);
-  --font-sans: var(--font-outfit);
+  --font-sans: var(--font-lato);
+  --font-heading: var(--font-lato);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
 body {
   background-color: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-outfit);
+  font-family: var(--font-lato);
   overflow-x: hidden;
 }
 
@@ -58,4 +140,62 @@ body {
 
 .animate-pulse-glow {
   animation: pulse-glow 2s infinite ease-in-out;
+}
+
+.dark {
+  --background: #0B1220;
+  --foreground: #F1F5F9;
+
+  --card: #0F172A;
+  --card-foreground: #F1F5F9;
+
+  --popover: #0F172A;
+  --popover-foreground: #F1F5F9;
+
+  --primary: #0085CA;                /* Process Light Blue reads better on dark bg */
+  --primary-foreground: #FFFFFF;
+
+  --secondary: #1E3A6B;
+  --secondary-foreground: #F1F5F9;
+
+  --muted: #1E293B;
+  --muted-foreground: #94A3B8;
+
+  --accent: #FF9F1C;                 /* Osprey Amber stays consistent in dark mode */
+  --accent-foreground: #0B1220;
+
+  --destructive: oklch(0.704 0.191 22.216);
+
+  --border: oklch(1 0 0 / 10%);
+
+  --input: oklch(1 0 0 / 15%);
+
+  --ring: #FF9F1C;
+
+  --chart-1: #0085CA;
+  --chart-2: #FF9F1C;
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+
+  --sidebar: #001A4D;
+  --sidebar-foreground: #F1F5F9;
+  --sidebar-primary: #FF9F1C;
+  --sidebar-primary-foreground: #001A4D;
+  --sidebar-accent: #0085CA;
+  --sidebar-accent-foreground: #FFFFFF;
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: #FF9F1C;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
 }

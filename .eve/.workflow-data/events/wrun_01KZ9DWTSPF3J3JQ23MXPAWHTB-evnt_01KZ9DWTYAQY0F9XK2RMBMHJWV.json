@@ -1,0 +1,15 @@
+{
+  "eventType": "step_created",
+  "runId": "wrun_01KZ9DWTSPF3J3JQ23MXPAWHTB",
+  "eventId": "evnt_01KZ9DWTYAQY0F9XK2RMBMHJWV",
+  "createdAt": "2026-08-05T17:00:19.782Z",
+  "specVersion": 5,
+  "correlationId": "step_01KZ9DWTSP2H0YYFTDZZZB6DHS",
+  "eventData": {
+    "stepName": "step//eve@0.30.6//startSessionTimeoutStep",
+    "input": {
+      "__type": "Uint8Array",
+      "data": "ZGV2bFt7ImFyZ3MiOjEsImNsb3N1cmVWYXJzIjotMSwidGhpc1ZhbCI6LTF9LFsyXSx7ImRlYWRsaW5lIjozLCJ0b2tlbiI6NX0sWyJEYXRlIiw0XSwiMjAyNi0wOS0wNFQxNzowMDoxOS42NDNaIiwiZXZlOnNlc3Npb246d3J1bl8wMUtaOURXVFNQRjNKM0pRMjNNWFBBV0hUQjppbmJveCJd"
+    }
+  }
+}

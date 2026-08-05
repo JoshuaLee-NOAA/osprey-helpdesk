@@ -1,0 +1,20 @@
+{
+  "runId": "wrun_01KZ9DSPP88J0X0MGVCV2NK3SJ",
+  "stepId": "step_01KZ9DSPP8ZJY8A6XT4B25G2E4",
+  "stepName": "step//eve@0.30.6//cancelSessionTimeoutStep",
+  "status": "completed",
+  "input": {
+    "__type": "Uint8Array",
+    "data": "ZGV2bFt7ImFyZ3MiOjEsImNsb3N1cmVWYXJzIjotMSwidGhpc1ZhbCI6LTF9LFsyXSx7InJ1bklkIjozfSwid3J1bl8wMUtaOURTUFJFWkVTSk5ZQThWOTBUWkEwVCJd"
+  },
+  "attempt": 1,
+  "startedAt": "2026-08-05T16:58:37.433Z",
+  "createdAt": "2026-08-05T16:58:37.433Z",
+  "updatedAt": "2026-08-05T16:58:37.446Z",
+  "specVersion": 5,
+  "output": {
+    "__type": "Uint8Array",
+    "data": "ZGV2bC0x"
+  },
+  "completedAt": "2026-08-05T16:58:37.446Z"
+}

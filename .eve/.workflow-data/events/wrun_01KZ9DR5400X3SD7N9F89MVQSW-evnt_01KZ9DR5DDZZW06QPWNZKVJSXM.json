@@ -1,0 +1,11 @@
+{
+  "eventType": "hook_disposed",
+  "specVersion": 5,
+  "correlationId": "hook_01KZ9DR5402VZ1QFHKAEDKJA7Q",
+  "eventData": {
+    "token": "wrun_01KZ9DR4N6JKC40HXV99BWNWK5:turn-control:0:cancel"
+  },
+  "runId": "wrun_01KZ9DR5400X3SD7N9F89MVQSW",
+  "eventId": "evnt_01KZ9DR5DDZZW06QPWNZKVJSXM",
+  "createdAt": "2026-08-05T16:57:46.669Z"
+}

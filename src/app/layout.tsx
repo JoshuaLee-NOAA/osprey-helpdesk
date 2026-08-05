@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
+import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
   title: "Osprey | AI-Powered Autonomous IT Helpdesk",
@@ -14,9 +15,10 @@ export default function RootLayout({
 }) {
   return (
     <ClerkProvider>
-      <html lang="en" className="h-full antialiased">
-        <body className="min-h-full flex flex-col bg-slate-50 text-slate-900 font-sans">
+      <html lang="en" className="h-full antialiased font-sans">
+        <body className="min-h-full flex flex-col bg-background text-foreground font-sans">
           {children}
+          <Toaster richColors position="top-right" />
         </body>
       </html>
     </ClerkProvider>

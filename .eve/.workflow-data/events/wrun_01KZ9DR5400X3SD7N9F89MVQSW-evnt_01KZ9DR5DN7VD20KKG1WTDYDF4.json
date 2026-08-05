@@ -1,0 +1,13 @@
+{
+  "eventType": "step_started",
+  "specVersion": 5,
+  "correlationId": "step_01KZ9DR5402VZ1QFHKAEDKJA7V",
+  "eventData": {
+    "stepName": "step//eve@0.30.6//sendTurnControlStep",
+    "workflowName": "workflow//eve//turnWorkflow",
+    "ownerMessageId": "msg_01KZ9DR55GVCSGPRWJEGD6GQDP"
+  },
+  "runId": "wrun_01KZ9DR5400X3SD7N9F89MVQSW",
+  "eventId": "evnt_01KZ9DR5DN7VD20KKG1WTDYDF4",
+  "createdAt": "2026-08-05T16:57:46.677Z"
+}

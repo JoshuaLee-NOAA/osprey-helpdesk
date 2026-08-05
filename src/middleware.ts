@@ -7,9 +7,9 @@ const isProtectedRoute = createRouteMatcher([
   "/api/agent/resume(.*)", // IT Admin actions route protection
 ]);
 
-export default clerkMiddleware((auth, req) => {
+export default clerkMiddleware(async (auth, req) => {
   if (isProtectedRoute(req)) {
-    auth().protect(); // Enforce user auth. Redirects unauthenticated users to sign-in.
+    await auth.protect(); // Enforce user auth. Redirects unauthenticated users to sign-in.
   }
 });
 

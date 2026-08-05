@@ -1,0 +1,15 @@
+{
+  "eventType": "step_created",
+  "runId": "wrun_01KZ9DWSZFYQR8JWAHP3H0GFDS",
+  "eventId": "evnt_01KZ9DWTBTA9C3H029YB92M5CR",
+  "createdAt": "2026-08-05T17:00:19.193Z",
+  "specVersion": 5,
+  "correlationId": "step_01KZ9DWSZFF2CB7655C886RJNT",
+  "eventData": {
+    "stepName": "step//eve@0.30.6//cancelSessionTimeoutStep",
+    "input": {
+      "__type": "Uint8Array",
+      "data": "ZGV2bFt7ImFyZ3MiOjEsImNsb3N1cmVWYXJzIjotMSwidGhpc1ZhbCI6LTF9LFsyXSx7InJ1bklkIjozfSwid3J1bl8wMUtaOURXVDFIV0hOUzRFS0MwNzROWlJaUiJd"
+    }
+  }
+}

@@ -17,7 +17,7 @@ This file is the **authoritative, living task tracker** for the project, mirrori
 - `agent/subagents/workspace-agent/tools/send-gmail.ts` - Gmail sending tool with conditional `needsApproval` configuration.
 - `agent/subagents/workspace-agent/tools/post-gchat.ts` - Threaded Google Chat notification tool.
 - `agent/subagents/workspace-agent/tools/schedule-calendar.ts` - Calendar search and support booking tool.
-- `src/app/layout.tsx` - Root layout setting up providers (Clerk, React Query/Eve) and global `Outfit` typography.
+- `src/app/layout.tsx` - Root layout setting up providers (Clerk, React Query/Eve) and global `Lato` typography.
 - `src/app/page.tsx` - Main router forwarding users dynamically based on role claims.
 - `src/app/portal/page.tsx` - Employee chat portal workspace utilizing `useEveAgent` client hooks.
 - `src/app/dashboard/hitl/page.tsx` - IT Admin real-time Command Center.
@@ -38,23 +38,26 @@ This file is the **authoritative, living task tracker** for the project, mirrori
 ### [ ] Increment 1.0: Core Shell, Auth, & Conversational Employee Portal (The "Hello World" Chat Slice)
 *Goal: Scaffold the project, configure Next.js with withEve, configure Clerk auth, and build a conversational chat portal calling useEveAgent.*
 
-- [ ] **1.1 Project Setup & Styling System**
-  - [ ] Initialize Next.js project with Tailwind CSS, TypeScript, and ESLint.
-  - [ ] Configure Google Font `Outfit` as the primary typography.
-  - [ ] Setup `shadcn/ui` variables with the project palette (NOAA Dark Blue `--primary`, Process Light Blue `--secondary`, and Osprey Amber `--accent`).
-- [ ] **1.2 Next.js and Eve Core Integration**
-  - [ ] Install the core package: `npm install eve@latest zod`.
-  - [ ] Wrap `next.config.ts` configuration with the `withEve()` wrapper to automatically mount agent routing.
-  - [ ] Create the root `agent/` folder and establish `agent/agent.ts` with `defineAgent`.
-  - [ ] Write initial instructions in `agent/instructions.md`.
-- [ ] **1.3 Authentication & Channel Controls**
-  - [ ] Install and configure Clerk SDK, wrapping the app layout in `<ClerkProvider>`.
-  - [ ] Author same-origin route protections inside `agent/channels/eve.ts` utilizing `localDev` and `vercelOidc`.
-- [ ] **1.4 Portal Chat Component**
-  - [ ] Build `ChatInterface.tsx` featuring a clean, responsive layout, styled chat bubbles, and an animated message stream.
-  - [ ] Integrate Eve's native client hook `useEveAgent` from `eve/react` to directly stream conversation blocks, attaching Clerk JWTs inside headers.
-- [ ] **Browser Verification:** Run `npm run dev`. Log in via Clerk, navigate to `/portal`, type a message, and verify you get a streamed conversational reply directly from the unified dev server.
+- [x] **1.1 Project Setup & Styling System**
+  - [x] Initialize Next.js project with Tailwind CSS, TypeScript, and ESLint.
+  - [x] Configure Google Font `Lato` as the primary typography (loaded via CSS `@import` in `globals.css`, exposed as `--font-lato`/`font-sans`).
+  - [x] Setup `shadcn/ui` variables with the project palette (NOAA Dark Blue `--primary`, Process Light Blue `--secondary`, and Osprey Amber `--accent`) — confirmed in `globals.css`, plus a full base component set in `src/components/ui/*` (built on `@base-ui/react`) and a `src/app/style-guide/page.tsx` preview page verified to render (HTTP 200).
+- [x] **1.2 Next.js and Eve Core Integration**
+  - [x] Install the core package: `npm install eve@latest zod`.
+  - [x] Wrap `next.config.ts` configuration with the `withEve()` wrapper to automatically mount agent routing.
+  - [x] Create the root `agent/` folder and establish `agent/agent.ts` with `defineAgent`.
+  - [x] Write initial instructions in `agent/instructions.md`.
+- [x] **1.3 Authentication & Channel Controls**
+  - [x] Install and configure Clerk SDK, wrapping the app layout in `<ClerkProvider>`.
+  - [x] Author same-origin route protections inside `agent/channels/eve.ts` utilizing `localDev` and `vercelOidc`.
+  - [x] Fix `src/middleware.ts` runtime crash (`auth().protect()` → `await auth.protect()`) — verified via `tsc --noEmit` and live `curl` to `/portal`.
+- [x] **1.4 Portal Chat Component**
+  - [x] Build `ChatInterface.tsx` featuring a clean, minimal, single-column chat-first layout (no sidebar), styled chat bubbles, and an animated message stream. **Redesigned 2026-08-05** per user feedback to remove a large hardcoded mock-response simulation engine that had been present in the original scaffold (fake Jira/Workspace/guardrail replies keyed off substring-matching user input) along with the sidebar/"suggested workflows" UI.
+  - [x] Integrate Eve's native client hook `useEveAgent` from `eve/react` to directly stream conversation blocks, attaching Clerk JWTs inside headers (real integration only now — all mock fallback logic removed; header-attachment for production JWTs still marked as a TODO comment in the code).
+
+- [ ] **Browser Verification:** Run `npm run dev`. Log in via Clerk, navigate to `/portal`, type a message, and verify you get a streamed conversational reply directly from the unified dev server. *(Automated checks — `tsc --noEmit`, `curl` against the running dev server — all pass; still needs a live human-in-browser pass to fully close out this increment.)*
 - [ ] **Git Milestone:** Commit and push: `feat: configure next config with withEve, integrate clerk authentication, and build chat with useEveAgent`
+
 
 ---
 
@@ -152,13 +155,16 @@ This file is the **authoritative, living task tracker** for the project, mirrori
 
 ## Current Status
 
-- **Active increment**: 1.0 (in progress — scaffolding exists for `agent/agent.ts`, `agent/instructions.md`, `agent/channels/eve.ts`, `next.config.ts` `withEve()` wrapper, Clerk middleware, and an initial `/portal` chat scaffold; not yet fully verified/complete per the 1.1–1.4 checklist above).
+- **Active increment**: 1.0 (subtasks 1.1–1.4 all implemented and verified via `tsc --noEmit` + live `curl` checks against the running dev server — see `activeContext.md`. Only the **Browser Verification** and **Git Milestone** steps remain, which require a live human-in-browser confirmation before this increment is fully closed out).
 - **Not started**: Increments 2.0 through 6.0.
+
 
 ## Known Issues
 
-- None logged yet. Add issues here as they're discovered during implementation, with the increment/subtask they block.
+- **[FIXED — 2026-08-05]** `src/middleware.ts` threw `TypeError: auth(...).protect is not a function` at runtime, blocking access to `/portal`, `/dashboard`, and `/api/agent/resume` (Increment 1.0, subtask 1.3). Root cause: this project's pinned Clerk SDK version expects `await auth.protect()` (the `auth` param called as a function directly is not the API surface) rather than the older `auth().protect()` pattern from typical training-data assumptions. Fixed by changing to `clerkMiddleware(async (auth, req) => { ... await auth.protect(); })`. Verified via `tsc --noEmit` (clean) and a live `curl` request to `/portal`, which now correctly returns Clerk's signed-out rewrite headers (`x-clerk-auth-status: signed-out`) instead of throwing.
 
 ## Evolution of Project Decisions
 
 - **2026-08-05**: PRD and original task list migrated from root-level `prd-osprey-helpdesk.md` / `tasks-prd-osprey-helpdesk.md` into the Memory Bank; those root files were deleted. This file (`progress.md`) is now the canonical task tracker.
+- **2026-08-05**: Fixed a Clerk middleware API mismatch (`auth().protect()` → `await auth.protect()`) that was breaking all protected routes. See Known Issues above.
+

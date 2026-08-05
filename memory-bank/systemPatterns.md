@@ -29,12 +29,22 @@ osprey-helpdesk/
 │               ├── post-gchat.ts
 │               └── schedule-calendar.ts
 └── src/
-    ├── middleware.ts                  # Clerk route protection
+    ├── middleware.ts                  # Clerk route protection (uses `clerkMiddleware(async (auth, req) => { await auth.protect(); })`)
+    ├── lib/
+    │   └── utils.ts                   # `cn()` classname helper (clsx + tailwind-merge)
+    ├── components/
+    │   └── ui/                        # shadcn/ui base components generated against @base-ui/react primitives
+    │       ├── avatar.tsx, badge.tsx, button.tsx, card.tsx, dialog.tsx,
+    │       └── input.tsx, label.tsx, separator.tsx, sonner.tsx, table.tsx, tabs.tsx
     └── app/
-        ├── page.tsx                   # Role-based router (redirects to /portal or /dashboard/hitl)
-        ├── portal/                    # Employee chat portal
-        └── dashboard/hitl/            # IT Admin command center (to be built)
+        ├── layout.tsx                 # Root layout — <ClerkProvider>, global Lato font, <Toaster />
+        ├── globals.css                # NOAA/Osprey Amber CSS variable tokens + Tailwind v4 @theme mapping
+        ├── page.tsx                   # Marketing/sign-in landing + role-based router (redirects to /portal or /dashboard/hitl)
+        ├── style-guide/page.tsx       # Internal, unauthenticated design-system preview page (colors, typography, all base components, HITL status affordances)
+        ├── portal/                    # Employee chat portal (ChatInterface.tsx uses real `useEveAgent`, no mocked chat logic)
+        └── dashboard/hitl/            # IT Admin command center (to be built — Increment 4.0)
 ```
+
 
 ## Key Technical Decisions
 
@@ -145,6 +155,9 @@ FOR EACH ROW EXECUTE FUNCTION prevent_audit_log_modification();
 - `--secondary`: Process Light Blue `#0085CA` — employee chat bubbles, active tabs.
 - `--accent`: Osprey Amber `#FF9F1C` — pending states, alert banners, pulsed AI "thinking" animations.
 - `--background`: white / light gray (`#FFFFFF` / `#F8FAFC`).
-- Typography: Google Font `Outfit`, applied globally.
+- Typography: Google Font `Lato`, applied globally.
 - Glassmorphic touch: `backdrop-filter: blur(8px)` with semi-transparent borders for alert cards and floating headers.
 - Animations: pulsing amber glows during subagent runs; slide-over transition for the Inspector Panel; row transition effects when queue items resolve.
+- **Live preview**: `src/app/style-guide/page.tsx` renders every base component + token combination on one unauthenticated page — use it to visually verify new brand/token changes before wiring them into `/portal` or `/dashboard/hitl`.
+- **Primitive library note**: shadcn/ui components in this project are generated against `@base-ui/react` (not Radix UI). When adding new shadcn components, expect imports like `import { X as XPrimitive } from "@base-ui/react/x"` and prop shapes (e.g., `render` prop for polymorphic elements, as used in `dialog.tsx`'s `DialogTrigger render={<Button variant="outline" />}`) that differ from Radix-based shadcn docs/training data.
+

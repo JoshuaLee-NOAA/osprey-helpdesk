@@ -1,0 +1,10 @@
+{
+  "eventType": "run_cancelled",
+  "specVersion": 5,
+  "eventData": {
+    "cancelReason": "Session ended before its timeout"
+  },
+  "runId": "wrun_01KZ9DWRJXGC268G85KBYT7JBQ",
+  "eventId": "evnt_01KZ9DWRV4FE5CT4XN6Q259NBH",
+  "createdAt": "2026-08-05T17:00:17.636Z"
+}

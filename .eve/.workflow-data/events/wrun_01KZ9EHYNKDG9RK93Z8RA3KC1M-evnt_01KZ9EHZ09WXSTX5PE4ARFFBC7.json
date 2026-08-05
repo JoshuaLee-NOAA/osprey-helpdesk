@@ -1,0 +1,13 @@
+{
+  "eventType": "step_started",
+  "specVersion": 5,
+  "correlationId": "step_01KZ9EHYNKSBWKH5NS0AMZW3N9",
+  "eventData": {
+    "stepName": "step//eve@0.30.6//cancelSessionTimeoutStep",
+    "workflowName": "workflow//eve//workflowEntry",
+    "ownerMessageId": "msg_01KZ9EHYYGMJ92D21PZHHSDJZV"
+  },
+  "runId": "wrun_01KZ9EHYNKDG9RK93Z8RA3KC1M",
+  "eventId": "evnt_01KZ9EHZ09WXSTX5PE4ARFFBC7",
+  "createdAt": "2026-08-05T17:11:52.073Z"
+}

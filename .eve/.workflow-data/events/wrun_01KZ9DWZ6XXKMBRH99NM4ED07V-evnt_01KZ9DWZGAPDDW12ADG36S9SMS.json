@@ -1,0 +1,15 @@
+{
+  "eventType": "step_created",
+  "runId": "wrun_01KZ9DWZ6XXKMBRH99NM4ED07V",
+  "eventId": "evnt_01KZ9DWZGAPDDW12ADG36S9SMS",
+  "createdAt": "2026-08-05T17:00:24.456Z",
+  "specVersion": 5,
+  "correlationId": "step_01KZ9DWZ6XW5C43NNV92A7XZ2H",
+  "eventData": {
+    "stepName": "step//eve@0.30.6//notifyDelegatedParentStep",
+    "input": {
+      "__type": "Uint8Array",
+      "data": "enN0ZCi1L/1gCwRFFwCWr4skAFHlAfxkqlRLVuXpoawdpsvhi1uk2xQTSGxL1lJwuP///z+sfAB+AIcA7l7HA1rlvX+ll1hOSbnlEMBW7BJLKp/2OoKzt9cfa9W8pDZkKjGtTHtNq8SO6VfZ4ksPotfzKfUIZM7rn5Fm6vHXdwebvIXf3Kx5jTUe0yoQn0NOl/ZvMzzzfdsdjMJNsMn0hysjuFlTXl/rD2/zrRM2a6+vhfXumJjXx01BoCZyIvz/SIGwoZRGco4CaZhIeYqK/nnq/fWv2cS1qllrHawtjCPNJtPrx45vM6mtOv/62GwCvY5USh6b68dKJZuxe/3QbcPj3qfWI+61Y4+OP6Fxry/8+Qyz1gbnXsvrF76SmOYFTN/CqcwAZeV0Y6C519M6/PUACXRqzsr1cfnrH4vkfrTmR5SNt9atC5UNsCxYLqwDy/98eI7cerFc+9dheZIrY7OW3CQ9rz2YB/OIXFuW1w8RM0DgJChMk8FCQAJCRAQkATEwSSA0poJmm9Hss8VsMrXXOFv0AN/PGG+vj8p0WOcksjYaplsSUmmtZlF7DSWm3wzCmZIWY7/2L1phsxSTDjbpaAa513dCsqFUD0YRTtCJzQRFR7lvUWIg35jmKMjUOMQ/QhhIchxISdP/9DywfWSkB0rwmZ/evXjYj16nYnmlLNOpfUzlAu1d8JXL/ZljrSqU+La+xXmeqGGaBjnIFaYxrsToOMojQSKlOUhqXDMpWaNWt7jVcnGNXMvpXWxFqLEgoxgjRpkZCUSGFCRxAyBCwpgy8xJgVkGumIk0LS6u3+XlI34MsBnxpHBJixPkgSsiw2KVI5iqEVXMKHVYLoaQSUSyG1UXhc0fLh4T8m8cbvBi4UksKANMaO3AzvxYIO0mmtCcHLobLIAVswfej+LquW/2T4y4n1UIflNRmQSROpDHooJJYD62ymIRnZk4HC4fsVl0Ly/SpUJI8JCnmuuIcWKB952kaI9+Zs1Eo0ijNQUgVVQ="
+    }
+  }
+}

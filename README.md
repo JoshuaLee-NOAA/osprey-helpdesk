@@ -99,7 +99,7 @@ Implementation proceeds in ordered increments (see `memory-bank/progress.md` for
 - **NOAA Dark Blue** (`#003087`) — headers, sidebars, primary actions
 - **Process Light Blue** (`#0085CA`) — chat bubbles, active tabs
 - **Osprey Amber** (`#FF9F1C`) — pending/alert states, active-agent indicators
-- Typography: Google Font `Outfit`
+- Typography: Google Font `Lato`
 
 ## Learn More
 

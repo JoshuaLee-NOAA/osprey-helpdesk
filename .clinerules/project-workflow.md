@@ -27,7 +27,8 @@ These rules are specific to the `osprey-helpdesk` project and complement the gen
 ## Design System
 
 - Colors: NOAA Dark Blue `--primary` (`#003087`), Process Light Blue `--secondary` (`#0085CA`), Osprey Amber `--accent` (`#FF9F1C`), white/light-gray backgrounds.
-- Typography: Google Font `Outfit`.
+- Typography: Google Font `Lato`.
+
 - Use `shadcn/ui` + Tailwind + `lucide-react` icons. Use `@tanstack/react-table` for the admin approval queue.
 - Osprey Amber pulsing badges indicate active sub-agent invocation in the chat UI.
 

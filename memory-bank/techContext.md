@@ -18,25 +18,41 @@
 
 ```json
 "dependencies": {
+  "@base-ui/react": "^1.7.0",
   "@clerk/nextjs": "^7.6.5",
   "@tanstack/react-table": "^9.0.0",
+  "class-variance-authority": "^0.7.1",
+  "clsx": "^2.1.1",
   "eve": "^0.30.6",
   "lucide-react": "^1.28.0",
   "next": "16.3.0",
+  "next-themes": "^0.4.6",
   "react": "19.2.8",
   "react-dom": "19.2.8",
+  "sonner": "^2.0.7",
+  "tailwind-merge": "^3.6.0",
+  "tw-animate-css": "^1.4.0",
   "zod": "^4.4.3"
 },
 "devDependencies": {
   "@tailwindcss/postcss": "^4",
-  "tailwindcss": "^4",
-  "typescript": "^5",
+  "@types/node": "^20",
+  "@types/react": "^19",
+  "@types/react-dom": "^19",
   "eslint": "^9",
-  "eslint-config-next": "16.3.0"
+  "eslint-config-next": "16.3.0",
+  "shadcn": "^4.16.1",
+  "tailwindcss": "^4",
+  "typescript": "^5"
 }
 ```
 
-Not yet added but required by later increments (per `progress.md`): Supabase client SDK (`@supabase/supabase-js`), Google Font `Outfit`, shadcn/ui CLI-generated components.
+**Important:** this project's `shadcn` CLI generation targets **`@base-ui/react`** primitives (NOT Radix UI as in older/typical shadcn/ui docs — e.g., `button.tsx` imports `Button as ButtonPrimitive` from `@base-ui/react/button`, `dialog.tsx` from `@base-ui/react/dialog`, etc.). Follow this project's existing `src/components/ui/*.tsx` files as the pattern reference when generating or hand-writing additional components — do not assume Radix APIs from training data.
+
+Google Font `Lato` is loaded via a plain CSS `@import` in `src/app/globals.css` (not `next/font/google`) and exposed as the `--font-lato` CSS variable (renamed from the original `--font-outfit` variable) / `font-sans` Tailwind token.
+
+Not yet added but required by later increments (per `progress.md`): Supabase client SDK (`@supabase/supabase-js`).
+
 
 ## Development Setup
 

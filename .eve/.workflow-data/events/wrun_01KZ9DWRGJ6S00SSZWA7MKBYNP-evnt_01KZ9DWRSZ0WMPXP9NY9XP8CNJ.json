@@ -1,0 +1,13 @@
+{
+  "eventType": "step_started",
+  "specVersion": 5,
+  "correlationId": "step_01KZ9DWRGJ2KQE6Y2R9M22BFJM",
+  "eventData": {
+    "stepName": "step//eve@0.30.6//notifyDelegatedParentStep",
+    "workflowName": "workflow//eve//workflowEntry",
+    "ownerMessageId": "msg_01KZ9DWRRTQ5TPK5V0KY9ZS1PH"
+  },
+  "runId": "wrun_01KZ9DWRGJ6S00SSZWA7MKBYNP",
+  "eventId": "evnt_01KZ9DWRSZ0WMPXP9NY9XP8CNJ",
+  "createdAt": "2026-08-05T17:00:17.599Z"
+}
