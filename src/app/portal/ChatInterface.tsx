@@ -8,21 +8,19 @@ import {
   Send,
   Bot,
   User,
-  Sparkles,
   Loader2,
   Clock,
   CheckCircle2,
   XCircle,
   ShieldAlert,
   Wrench,
-  SquarePen,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
 interface ChatInterfaceProps {
@@ -35,7 +33,7 @@ interface ChatInterfaceProps {
 
 export default function ChatInterface({ user }: ChatInterfaceProps) {
   const [input, setInput] = useState("");
-  const scrollAnchorRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const agent = useEveAgent({
     headers: async () => ({
@@ -46,11 +44,43 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
 
   const isBusy = agent.status === "submitted" || agent.status === "streaming";
   const messages = agent.data.messages;
-  const isEmpty = messages.length === 0;
+  const visibleMessages = messages.filter(hasVisibleContent);
+  const isEmpty = visibleMessages.length === 0;
 
   useEffect(() => {
-    scrollAnchorRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, agent.status]);
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    // Scroll helper supporting custom behavior (smooth vs instant)
+    const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior,
+      });
+    };
+
+    // Use instant scrolling during live text streaming for rock-solid anchors
+    const scrollBehavior = agent.status === "streaming" ? "auto" : "smooth";
+
+    // Scroll immediately on new messages or status changes
+    scrollToBottom(scrollBehavior);
+
+    // Use ResizeObserver to lock scroll to bottom seamlessly as text streams
+    const observer = new ResizeObserver(() => {
+      const isNearBottom =
+        container.scrollHeight - container.scrollTop - container.clientHeight < 300;
+      if (isNearBottom) {
+        scrollToBottom(scrollBehavior);
+      }
+    });
+
+    const chatContent = container.firstElementChild;
+    if (chatContent) {
+      observer.observe(chatContent);
+    }
+
+    return () => observer.disconnect();
+  }, [visibleMessages, agent.status]);
 
   const handleSend = async (text: string) => {
     const trimmed = text.trim();
@@ -64,14 +94,18 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
   };
 
   return (
-    <div className="flex flex-1 flex-col h-full bg-background">
-      {/* Minimal Top Header */}
-      <header className="h-14 border-b border-border flex items-center justify-between px-4 sm:px-6 shrink-0">
+    <div className="flex flex-col h-full w-full bg-slate-50/50 overflow-hidden">
+      {/* Full-width Top Header */}
+      <header className="h-14 border-b border-border flex items-center justify-between px-6 shrink-0 bg-background z-20">
         <div className="flex items-center gap-2">
-          <div className="h-6 w-6 rounded-md bg-primary flex items-center justify-center">
-            <Sparkles className="h-3.5 w-3.5 text-accent" />
-          </div>
-          <span className="text-sm font-semibold text-foreground">Osprey</span>
+          <img
+            src="/logo.svg"
+            alt="Osprey Logo"
+            className="h-6 w-auto object-contain select-none"
+          />
+          <span className="text-sm font-extrabold tracking-wider ml-1 bg-gradient-to-r from-[#005F9E] via-[#0085CA] to-[#FF9F1C] bg-clip-text text-transparent select-none">
+            OSPREY
+          </span>
           <span
             className={cn(
               "ml-2 h-1.5 w-1.5 rounded-full",
@@ -82,100 +116,102 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="New chat"
-            onClick={() => agent.reset()}
-            disabled={isBusy}
-            className="text-muted-foreground"
-          >
-            <SquarePen className="h-4 w-4" />
-          </Button>
           <UserButton />
         </div>
       </header>
 
-      {/* Chat Column */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 py-10 flex flex-col min-h-full">
-          {isEmpty ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-center gap-3">
-              <h2 className="text-2xl font-semibold text-foreground">
-                How can I help you today, {user.name.split(" ")[0]}?
-              </h2>
-              <p className="text-sm text-muted-foreground max-w-md">
-                Describe an IT issue or ask for a status update — Osprey will route your
-                request to the right specialist agent.
-              </p>
-            </div>
-          ) : (
-            <div className="flex-1 flex flex-col gap-6">
-              {messages.map((message) => (
-                <ChatMessage key={message.id} message={message} />
-              ))}
+      {/* Main viewport below header split into gutters + centered chat */}
+      <div className="flex-1 flex items-center justify-center overflow-hidden p-4 bg-slate-50/50">
+        {/* Bounded Center Chat Area - STRICT fixed height and width */}
+        <div className="w-full max-w-3xl h-[82vh] min-h-[480px] max-h-[850px] bg-background border border-border rounded-2xl flex flex-col shadow-md relative overflow-hidden">
+          {/* Chat Column */}
+          <div ref={scrollContainerRef} className="flex-1 overflow-y-auto scroll-smooth">
+            <div className="px-6 py-10 flex flex-col min-h-full">
+              {isEmpty ? (
+                <div className="flex-1 flex flex-col items-center justify-center text-center gap-3">
+                  <h2 className="text-2xl font-semibold text-foreground">
+                    How can I help you today, {user.name.split(" ")[0]}?
+                  </h2>
+                  <p className="text-sm text-muted-foreground max-w-md">
+                    Describe an IT issue or ask for a status update — Osprey will route your
+                    request to the right specialist agent.
+                  </p>
+                </div>
+              ) : (
+                <div className="flex-1 flex flex-col gap-6">
+                  {visibleMessages.map((message) => (
+                    <ChatMessage key={message.id} message={message} userImageUrl={user.imageUrl} />
+                  ))}
 
-              {agent.status === "submitted" && (
-                <div className="flex items-center gap-3 bg-accent/10 border border-accent/20 px-4 py-2.5 rounded-full w-fit animate-pulse-glow">
-                  <Loader2 className="h-4 w-4 text-accent animate-spin" />
-                  <span className="text-xs font-semibold text-accent">
-                    Osprey is thinking...
-                  </span>
                 </div>
               )}
 
-              <div ref={scrollAnchorRef} />
+              {agent.error ? (
+                <p className="text-xs text-destructive font-medium text-center mt-4">
+                  {agent.error.message}
+                </p>
+              ) : null}
             </div>
-          )}
+          </div>
 
-          {agent.error ? (
-            <p className="text-xs text-destructive font-medium text-center mt-4">
-              {agent.error.message}
-            </p>
-          ) : null}
+          {/* Message Input */}
+          <div className="shrink-0 px-6 pb-6 pt-4 border-t border-border/40 bg-background z-10">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSend(input);
+              }}
+              className="relative flex items-center gap-2"
+            >
+              <Input
+                type="text"
+                placeholder="Message Osprey..."
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                disabled={isBusy}
+                className="h-12 pl-4 pr-12 rounded-full text-sm border-border shadow-sm bg-slate-50/50 focus-visible:bg-background"
+              />
+              <Button
+                type="submit"
+                size="icon"
+                disabled={!input.trim() || isBusy}
+                className="absolute right-1.5 h-9 w-9 rounded-full"
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            </form>
+          </div>
         </div>
-      </div>
-
-      {/* Message Input */}
-      <div className="shrink-0 px-4 sm:px-6 pb-6 pt-2">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleSend(input);
-          }}
-          className="max-w-2xl mx-auto relative flex items-center gap-2"
-        >
-          <Input
-            type="text"
-            placeholder="Message Osprey..."
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            disabled={isBusy}
-            className="h-12 pl-4 pr-12 rounded-full text-sm border-border shadow-sm"
-          />
-          <Button
-            type="submit"
-            size="icon"
-            disabled={!input.trim() || isBusy}
-            className="absolute right-1.5 h-9 w-9 rounded-full"
-          >
-            <Send className="h-4 w-4" />
-          </Button>
-        </form>
       </div>
     </div>
   );
 }
 
-function ChatMessage({ message }: { readonly message: EveMessage }) {
+function ChatMessage({ message, userImageUrl }: { readonly message: EveMessage; readonly userImageUrl: string }) {
   const isUser = message.role === "user";
 
   return (
     <div className={cn("flex gap-3 max-w-[85%]", isUser ? "self-end flex-row-reverse ml-auto" : "self-start")}>
-      <Avatar className="shrink-0">
-        <AvatarFallback className={isUser ? "bg-muted text-foreground" : "bg-primary text-primary-foreground"}>
-          {isUser ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
-        </AvatarFallback>
+      <Avatar className={cn("shrink-0 shadow-sm", isUser ? "size-8" : "size-16")}>
+        {isUser ? (
+          <>
+            <AvatarImage src={userImageUrl} alt="User Avatar" />
+            <AvatarFallback className="bg-muted text-foreground">
+              <User className="h-4 w-4" />
+            </AvatarFallback>
+          </>
+        ) : (
+          <>
+            <AvatarImage
+              src="/logo.svg"
+              alt="Osprey Avatar"
+              className="p-2.5 bg-white object-contain"
+            />
+            <AvatarFallback className="bg-primary text-primary-foreground">
+              <Bot className="h-8 w-8" />
+            </AvatarFallback>
+          </>
+        )}
       </Avatar>
 
       <div className="flex flex-col gap-3 min-w-0">
@@ -290,4 +326,23 @@ function SubagentToolCard({ part }: { readonly part: EveDynamicToolPart }) {
       )}
     </Card>
   );
+}
+
+function hasVisibleContent(message: EveMessage): boolean {
+  if (message.role === "user") return true;
+
+  return message.parts.some((part) => {
+    switch (part.type) {
+      case "text":
+        return part.text.trim().length > 0;
+      case "reasoning":
+        return part.text.trim().length > 0;
+      case "file":
+      case "authorization":
+      case "dynamic-tool":
+        return true;
+      default:
+        return false;
+    }
+  });
 }

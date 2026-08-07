@@ -41,7 +41,7 @@ This file is the **authoritative, living task tracker** for the project, mirrori
 - [x] **1.1 Project Setup & Styling System**
   - [x] Initialize Next.js project with Tailwind CSS, TypeScript, and ESLint.
   - [x] Configure Google Font `Lato` as the primary typography (loaded via CSS `@import` in `globals.css`, exposed as `--font-lato`/`font-sans`).
-  - [x] Setup `shadcn/ui` variables with the project palette (NOAA Dark Blue `--primary`, Process Light Blue `--secondary`, and Osprey Amber `--accent`) — confirmed in `globals.css`, plus a full base component set in `src/components/ui/*` (built on `@base-ui/react`) and a `src/app/style-guide/page.tsx` preview page verified to render (HTTP 200).
+  - [x] Setup `shadcn/ui` variables with the project palette (NOAA Dark Blue `--primary`, Process Light Blue `--secondary`, and Osprey Amber `--accent`) — confirmed in `globals.css`, plus a full base component set in `src/components/ui/*` (built on `@base-ui/react`).
 - [x] **1.2 Next.js and Eve Core Integration**
   - [x] Install the core package: `npm install eve@latest zod`.
   - [x] Wrap `next.config.ts` configuration with the `withEve()` wrapper to automatically mount agent routing.
