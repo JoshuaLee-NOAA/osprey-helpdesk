@@ -133,7 +133,7 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
                     How can I help you today, {user.name.split(" ")[0]}?
                   </h2>
                   <p className="text-sm text-muted-foreground max-w-md">
-                    Describe an IT issue or ask for a status update — Osprey will route your
+                    Osprey will route your
                     request to the right specialist agent.
                   </p>
                 </div>

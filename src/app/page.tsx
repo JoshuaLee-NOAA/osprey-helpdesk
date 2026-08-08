@@ -82,7 +82,7 @@ export default async function Home() {
 
         {/* Supporting copy */}
         <p className="mb-12 max-w-xl text-base leading-relaxed text-muted-foreground md:text-lg">
-          Describe your IT issue in plain language. Osprey&apos;s specialized
+          Osprey&apos;s specialized
           agents triage, ticket, and schedule — while every high-risk action
           waits for a human&apos;s approval.
         </p>
@@ -129,7 +129,7 @@ export default async function Home() {
               Human-in-the-Loop Control
             </h3>
             <p className="text-sm leading-relaxed text-muted-foreground">
-              High-risk actions pause durably for IT Admin review — approve,
+              High-risk actions require IT Admin review — approve,
               modify, or reject before anything executes.
             </p>
           </div>
