@@ -17,7 +17,11 @@ import {
   ExternalLink,
   Shield,
   Laptop,
-  Wrench 
+  Wrench,
+  Brain,
+  Compass,
+  ClipboardList,
+  Workflow
 } from "lucide-react";
 import type { EveMessage } from "eve/react";
 import { Button } from "@/components/ui/button";
@@ -45,7 +49,6 @@ export interface TicketItem {
 
 interface DiagnosticsConsoleProps {
   readonly isOpen: boolean;
-  readonly onClose: () => void;
   readonly messages: readonly EveMessage[];
   readonly isBusy: boolean;
   readonly onTicketClick?: (summary: string, id: string) => void;
@@ -55,7 +58,6 @@ interface DiagnosticsConsoleProps {
 
 export default function DiagnosticsConsole({ 
   isOpen, 
-  onClose, 
   messages, 
   isBusy,
   onTicketClick,
@@ -95,6 +97,43 @@ export default function DiagnosticsConsole({
     });
   });
 
+  // Chronological list of all tool and subagent calls
+  const toolCallsMap = new Map<string, {
+    toolName: string;
+    displayName: string;
+    state: string;
+    isSubagent: boolean;
+    input: any;
+    output: any;
+    errorText?: string;
+  }>();
+
+  messages.forEach((msg) => {
+    msg.parts.forEach((part) => {
+      if (part.type === "dynamic-tool") {
+        const key = (part as any).toolCallId || part.toolName;
+        const kind = (part as any).toolMetadata?.eve?.kind;
+        const displayName = (part as any).toolMetadata?.eve?.name ?? part.toolName;
+        const isSubagent = kind === "subagent-call";
+
+        toolCallsMap.set(key, {
+          toolName: part.toolName,
+          displayName,
+          state: part.state,
+          isSubagent,
+          input: part.input,
+          output: part.output,
+          errorText: (part as any).errorText
+        });
+      }
+    });
+  });
+
+  const toolCalls = Array.from(toolCallsMap.entries()).map(([id, info]) => ({
+    id,
+    ...info
+  }));
+
   // Auto-scroll the reasoning logs terminal to the bottom as reasoning streams in
   useEffect(() => {
     if (isConsoleExpanded && isOpen) {
@@ -110,21 +149,16 @@ export default function DiagnosticsConsole({
       {/* Sidebar Header */}
       <div className="p-4 border-b border-border/40 flex items-center justify-between shrink-0 bg-slate-50/50">
         <span className="text-xs font-bold text-[#005F9E] tracking-wider flex items-center gap-1.5 uppercase font-mono">
-          <Ticket className="h-4 w-4 text-[#005F9E]" />
+          <ClipboardList className="h-4 w-4 text-[#005F9E]" />
           My Service Tickets
         </span>
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={onClose} 
-          className="h-7 w-7 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-100"
-        >
-          <PanelRightClose className="h-4 w-4" />
-        </Button>
       </div>
 
       {/* Main stacked ticket display panel */}
-      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-6 scroll-smooth">
+      <div className={cn(
+        "overflow-y-auto p-4 flex flex-col gap-6 scroll-smooth transition-all duration-300",
+        isConsoleExpanded ? "h-0 flex-0 p-0 overflow-hidden border-none" : "flex-1"
+      )}>
         
         {/* Active Support Tickets */}
         <div className="flex flex-col gap-2.5">
@@ -227,16 +261,19 @@ export default function DiagnosticsConsole({
 
       </div>
 
-      {/* Minimizable / Collapsible AI Diagnostics Console Drawer at Bottom */}
-      <div className="border-t border-border shrink-0 bg-slate-50/80 backdrop-blur-xs flex flex-col">
+      {/* Collapsible Tool & Agent Activity Timeline Drawer at Bottom */}
+      <div className={cn(
+        "border-t border-border bg-slate-50/95 backdrop-blur-xs flex flex-col transition-all duration-300",
+        isConsoleExpanded ? "flex-1 min-h-0" : "shrink-0"
+      )}>
         {/* Toggle bar */}
         <button 
           onClick={() => setIsConsoleExpanded(!isConsoleExpanded)}
           className="w-full p-4 flex items-center justify-between text-left hover:bg-slate-100 transition-colors"
         >
-          <span className="text-xs font-mono font-black text-amber-600 tracking-wider flex items-center gap-1.5 uppercase">
-            <Terminal className="h-4 w-4 text-amber-600 animate-pulse-glow" />
-            AI Diagnostics Monitor
+          <span className="text-xs font-mono font-black text-[#005F9E] tracking-wider flex items-center gap-1.5 uppercase">
+            <Workflow className="h-4 w-4 text-[#005F9E] animate-pulse" />
+            Agent & Tool Activity
           </span>
           {isConsoleExpanded ? (
             <ChevronDown className="h-4 w-4 text-slate-500" />
@@ -247,65 +284,143 @@ export default function DiagnosticsConsole({
 
         {/* Collapsible Content */}
         {isConsoleExpanded && (
-          <div className="px-4 pb-4 flex flex-col gap-4 animate-in slide-in-from-bottom duration-300 max-h-[300px] overflow-y-auto border-t border-border/40 pt-3">
+          <div className="px-5 pb-5 flex flex-col gap-4 animate-in slide-in-from-bottom duration-300 flex-1 overflow-y-auto border-t border-border/40 pt-4 min-h-0">
             
-            {/* Reasoning Terminal Log */}
-            <div className="flex flex-col gap-1.5">
-              <span className="text-[9px] font-mono font-bold text-slate-400 tracking-widest uppercase flex items-center gap-1">
-                <Cpu className="h-3 w-3" />
-                Reasoning Logs
-              </span>
-              <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 font-mono text-[10px] leading-relaxed overflow-y-auto flex flex-col gap-2 max-h-[140px] text-slate-300">
-                {reasoningLogs.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-full text-slate-600 gap-1 py-4">
-                    <CircleDot className={cn("h-3 w-3", isBusy ? "text-amber-500 animate-pulse" : "text-slate-700")} />
-                    <p className="italic text-[9px]">
-                      {isBusy ? "Osprey thinking..." : "Awaiting prompts..."}
-                    </p>
-                  </div>
-                ) : (
-                  <>
-                    {reasoningLogs.map((log, index) => (
-                      <p key={index} className="text-slate-300 select-all border-l-2 border-slate-800 pl-1.5">
-                        {log}
-                      </p>
-                    ))}
-                    {isBusy && (
-                      <div className="flex items-center gap-0.5 text-amber-500 mt-0.5">
-                        <span className="h-1 w-1 bg-amber-500 rounded-full animate-bounce" />
-                        <span className="h-1 w-1 bg-amber-500 rounded-full animate-bounce [animation-delay:0.2s]" />
-                        <span className="h-1 w-1 bg-amber-500 rounded-full animate-bounce [animation-delay:0.4s]" />
+            {/* Minimalist Sub-Header */}
+            <p className="text-[10px] text-muted-foreground font-medium italic select-none">
+              Chronological log of specialized subagent handoffs and executed backend integrations.
+            </p>
+
+            {/* Timeline component */}
+            <div className="flex flex-col gap-4 pl-3 border-l border-slate-200 ml-1.5">
+              {toolCalls.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-10 text-slate-400 gap-2">
+                  <Compass className={cn("h-5 w-5", isBusy ? "animate-spin text-[#005F9E]" : "text-slate-300")} />
+                  <p className="text-xs font-medium italic">
+                    {isBusy ? "Initiating systems..." : "No active calls. Tools will display here as they run!"}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {toolCalls.map((call, index) => {
+                    const isLast = index === toolCalls.length - 1;
+                    const isSubagent = call.isSubagent;
+
+                    // Extract nice meta descriptions from input and output
+                    const metaRows: { label: string; value: string }[] = [];
+                    const inputObj = call.input as Record<string, any> || {};
+                    const outputObj = call.output as Record<string, any> || {};
+
+                    // Extract input fields
+                    if (inputObj.summary) {
+                      metaRows.push({ label: "Summary", value: inputObj.summary });
+                    }
+                    if (inputObj.query || inputObj.jql) {
+                      metaRows.push({ label: "Query", value: inputObj.query || inputObj.jql });
+                    }
+                    if (inputObj.prompt || inputObj.task) {
+                      metaRows.push({ label: "Task", value: inputObj.prompt || inputObj.task });
+                    }
+                    if (inputObj.assignee) {
+                      metaRows.push({ label: "Assignee", value: inputObj.assignee });
+                    }
+
+                    // Extract output fields (e.g. Jira key or success message)
+                    if (outputObj.key || outputObj.id) {
+                      metaRows.push({ label: "Key", value: outputObj.key || outputObj.id });
+                    }
+                    if (outputObj.status) {
+                      metaRows.push({ label: "Status", value: outputObj.status });
+                    }
+
+                    // Tool state metadata mapping
+                    const stateMetaMap: Record<string, { label: string; className: string; bg: string }> = {
+                      "input-streaming": { label: "Pending", className: "text-slate-400", bg: "bg-slate-100 border-slate-200" },
+                      "input-available": { label: "Running", className: "text-blue-600", bg: "bg-blue-50 border-blue-100 animate-pulse" },
+                      "approval-requested": { label: "Approval Required", className: "text-amber-600", bg: "bg-amber-50 border-amber-100 animate-pulse" },
+                      "approval-responded": { label: "Responded", className: "text-slate-500", bg: "bg-slate-100 border-slate-200" },
+                      "output-available": { label: "Completed", className: "text-emerald-600", bg: "bg-emerald-50 border-emerald-100" },
+                      "output-error": { label: "Failed", className: "text-red-600", bg: "bg-red-50 border-red-100" },
+                      "output-denied": { label: "Denied", className: "text-orange-600", bg: "bg-orange-50 border-orange-100" },
+                    };
+
+                    const stateMeta = stateMetaMap[call.state] || { label: call.state, className: "text-slate-500", bg: "bg-slate-100 border-slate-200" };
+
+                    return (
+                      <div key={call.id} className="flex flex-col gap-1.5 relative animate-in fade-in slide-in-from-left-2 duration-300">
+                        {/* Timeline Connector Node */}
+                        <div className={cn(
+                          "absolute -left-[17px] top-1 h-3.5 w-3.5 rounded-full border-2 border-white shadow-xs flex items-center justify-center z-10",
+                          call.state === "input-available" || call.state === "approval-requested"
+                            ? "bg-[#FF9F1C] text-white"
+                            : call.state === "output-available"
+                              ? "bg-emerald-500 text-white"
+                              : call.state === "output-error" || call.state === "output-denied"
+                                ? "bg-red-500 text-white"
+                                : "bg-[#005F9E] text-white"
+                        )}>
+                          {isSubagent ? (
+                            <Cpu className="h-1.5 w-1.5" />
+                          ) : (
+                            <Wrench className="h-1.5 w-1.5" />
+                          )}
+                        </div>
+
+                        {/* Content Card */}
+                        <div className="bg-white border border-slate-150 rounded-xl p-3 shadow-xs flex flex-col gap-2">
+                          {/* Card Header */}
+                          <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-1.5">
+                            <div className="flex flex-col min-w-0">
+                              <span className="text-[10px] font-mono font-extrabold uppercase text-[#005F9E] leading-none tracking-wider">
+                                {isSubagent ? "Subagent Call" : "System Tool"}
+                              </span>
+                              <span className="text-xs font-extrabold text-slate-800 truncate mt-0.5">
+                                {call.displayName}
+                              </span>
+                            </div>
+                            <span className={cn("text-[9px] font-black uppercase px-2 py-0.5 rounded-full border tracking-wide", stateMeta.className, stateMeta.bg)}>
+                              {stateMeta.label}
+                            </span>
+                          </div>
+
+                          {/* Meta Key-Value Grid */}
+                          {metaRows.length > 0 ? (
+                            <div className="grid grid-cols-1 gap-1">
+                              {metaRows.map((row, idx) => (
+                                <div key={idx} className="flex items-start gap-1 text-[10px] leading-relaxed">
+                                  <span className="font-mono font-black text-slate-400 uppercase w-14 shrink-0">{row.label}:</span>
+                                  <span className="text-slate-600 font-semibold truncate flex-1">{row.value}</span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-[10px] text-slate-400 font-medium italic">
+                              Invoking pipeline parameters...
+                            </p>
+                          )}
+
+                          {/* Error block if failed */}
+                          {(call.state === "output-error" && call.errorText) && (
+                            <div className="text-[9px] bg-red-50 text-red-700 border border-red-100 rounded-lg p-2 font-mono break-all select-all">
+                              {call.errorText}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    )}
-                    <div ref={terminalEndRef} />
-                  </>
-                )}
-              </div>
+                    );
+                  })}
+                  {isBusy && (
+                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-[#FF9F1C] pl-1 py-1">
+                      <span className="h-1.5 w-1.5 bg-[#FF9F1C] rounded-full animate-bounce" />
+                      <span className="h-1.5 w-1.5 bg-[#FF9F1C] rounded-full animate-bounce [animation-delay:0.2s]" />
+                      <span className="h-1.5 w-1.5 bg-[#FF9F1C] rounded-full animate-bounce [animation-delay:0.4s]" />
+                      Running subagent processes...
+                    </div>
+                  )}
+                  <div ref={terminalEndRef} />
+                </>
+              )}
             </div>
-
-            {/* Visual connectivity trace */}
-            <div className="flex items-center justify-between text-[10px] bg-white border border-border rounded-lg p-2.5 shrink-0">
-              <div className="flex items-center gap-1.5 font-mono">
-                <Network className="h-3.5 w-3.5 text-slate-400" />
-                <span className="font-semibold text-slate-600">Active Node:</span>
-              </div>
-              <Badge variant="outline" className="text-[8px] border-emerald-500/30 text-emerald-600 bg-emerald-500/5 font-black uppercase">
-                {activeToolName ? (activeToolName.includes("-") ? activeToolName.split("-")[0] : "workspace") : "supervisor"}
-              </Badge>
-            </div>
-
-            {/* Zod Inspector */}
-            {activeToolPayload && (
-              <div className="flex flex-col gap-1.5 animate-in fade-in duration-300 shrink-0">
-                <span className="text-[9px] font-mono font-bold text-slate-400 tracking-widest uppercase flex items-center gap-1">
-                  <FileCode className="h-3 w-3" />
-                  Active Parameters
-                </span>
-                <pre className="bg-slate-950 border border-slate-800 text-amber-500 font-mono text-[9px] rounded-xl p-2.5 overflow-x-auto max-h-[100px] whitespace-pre-wrap select-all">
-                  {JSON.stringify(activeToolPayload, null, 2)}
-                </pre>
-              </div>
-            )}
 
           </div>
         )}

@@ -36,6 +36,10 @@ Our focus is:
 - **2026-08-08**: Authored a robust `src/lib/jira.ts` client supporting offline local development via `API_MODE=MOCK` and live, authenticated Atlassian API calls using v3 Atlassian Document Format payloads.
 - **2026-08-08**: Expanded Epic 1 UX scope to incorporate the **Double-Sidebar Portal Layout**, adding User Story 1.4 (Left Sidebar Ticket & History Drawer) and User Story 1.5 (Right Sidebar AI Diagnostics Console).
 - **2026-08-08**: Swapped the temporary guest WiFi passcode tool with a highly advanced, fully automated **GCP Project and Terraform Science Workstation Provisioning tool**, introducing a specialized **`gcp-agent`** subagent.
+- **2026-08-09**: Designed and implemented the high-fidelity **Agent & Tool Activity Timeline** in `DiagnosticsConsole.tsx` replacing the text-only monologue.
+- **2026-08-09**: Programmed fluid CSS flex transitions enabling the Agent & Tool Activity Timeline to expand up to **100% full panel height** on toggle, hiding the tickets grid cleanly.
+- **2026-08-09**: Differentiated Left and Right sidebar header icons using distinct, semantic symbols (`History` and `ClipboardList` respectively).
+- **2026-08-09**: Fixed the Jira search filtering gap by implementing **email-aware JQL queries** in `src/lib/jira.ts` (matching `reporter`, `creator`, or `assignee`) and updating `jira-agent/instructions.md` with explicit employee ownership guidelines.
 
 ---
 

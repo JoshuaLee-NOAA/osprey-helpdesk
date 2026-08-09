@@ -120,13 +120,15 @@ This file is the **authoritative, living task tracker** for the project, mirrori
 
 ## Current Status
 
-- **Active Epic**: Epic 1: Portal & Conversational Core (UX) - Double-Sidebar layout, reasoning diagnostics stream console, and employee ticket dashboard components are 100% complete and verified.
-- **Ready for Next Step**: Wire Clerk session JWT secure authorization tokens inside client ChatInterface to socket connections (completion of US 1.1), followed by scaffolding actual specialized subagents (Jira subagent - Epic 2)!
-- **Not started**: Epics 2 through 4 (re-architected for 100% real live integrations).
+- **Active Epic**: Epic 2: Live Multi-Agent Systems & Credential Vault. The Jira specialist subagent (`jira-agent`) is 100% complete and fully verified with live JQL queries and ownership guidelines.
+- **Ready for Next Step**: Implement the specialized Google Workspace subagent (`workspace-agent`) to support automated Gmail dispatches, Google Chat webhooks, and Calendar bookings (Epic 2.2).
+- **In progress**: Epic 2 (Jira core integrated, Workspace starting).
+- **Not started**: Epics 3 and 4 (GCP provisioning infrastructure and Supabase-backed HITL approval queues).
 
 ## Known Issues
 
 - **[FIXED — 2026-08-05]** Clerk middleware route protection crash (`auth().protect()` → `await auth.protect()`).
+- **[FIXED — 2026-08-09]** Jira agent unassigned issue search filter mismatch. Resolved via email-aware JQL expanding query targets to `reporter`, `creator`, and `assignee` simultaneously.
 
 ## Evolution of Project Decisions
 
@@ -137,3 +139,6 @@ This file is the **authoritative, living task tracker** for the project, mirrori
 - **2026-08-08**: Implemented collapsible Left and Right sidebars inside `ChatInterface.tsx` with sliding glassmorphism effects, live-monitored reasoning logs terminal streams, and high-density active ticket status grids.
 - **2026-08-08**: Executed initial Postgres real-time schema and trigger migrations in live Supabase dashboard workspace.
 - **2026-08-08**: Refactored layout to match clean, minimal Gemini-style left navigation drawer (strictly past logs), introduced active/resolved IT ticket cards inside the main landing screen, and stacked service tickets on top of a collapsible/minimized Diagnostics Console in the right sidebar. Added clickable callback hooks that prompt Osprey instantly when ticket cards are clicked.
+- **2026-08-09**: Replaced text monologue with high-fidelity, color-coded **Agent & Tool Activity Timeline** capturing dynamic tool statuses (`Running`, `Completed`, `Failed`, `Approval Required`, etc.).
+- **2026-08-09**: Added responsive CSS class triggers enabling the Activity Timeline drawer to expand up to **100% panel height** on demand, collapsing the tickets panel to 0px dynamically.
+- **2026-08-09**: Upgraded Jira ticket searching to be fully **email-aware**, resolving a core gap where helpdesk tickets (unassigned by default) could not be retrieved by the agent's assignee JQL filters. Added formal employee ownership instructions in `instructions.md`.

@@ -53,8 +53,11 @@ export async function searchJiraIssues(queryText: string): Promise<JiraIssue[]> 
   } else {
     const escapedQuery = queryText.replace(/"/g, '\\"');
     const isIssueKey = /^[A-Za-z]+-\d+$/.test(queryText.trim());
+    const isEmail = queryText.includes("@");
 
-    if (isIssueKey) {
+    if (isEmail) {
+      jql = `project = "${config.JIRA_PROJECT_KEY}" AND (reporter = "${escapedQuery}" OR creator = "${escapedQuery}" OR assignee = "${escapedQuery}" OR summary ~ "\\"${escapedQuery}\\"" OR text ~ "\\"${escapedQuery}\\"") ORDER BY created DESC`;
+    } else if (isIssueKey) {
       jql = `project = "${config.JIRA_PROJECT_KEY}" AND (key = "${escapedQuery}" OR summary ~ "\\"${escapedQuery}\\"" OR text ~ "\\"${escapedQuery}\\"") ORDER BY created DESC`;
     } else {
       jql = `project = "${config.JIRA_PROJECT_KEY}" AND (summary ~ "\\"${escapedQuery}\\"" OR text ~ "\\"${escapedQuery}\\"") ORDER BY created DESC`;

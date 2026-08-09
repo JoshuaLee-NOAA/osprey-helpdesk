@@ -24,6 +24,7 @@ import {
   Laptop,
   Cpu,
   Network,
+  Plus,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -104,10 +105,28 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
     setActiveThreadId(id);
   };
 
-  const handleSessionChange = (id: string, sessionState: any) => {
+  const handleSessionChange = (id: string, sessionState: any, events?: readonly any[]) => {
     setThreads((prevThreads) => {
+      const existing = prevThreads.find((t) => t.id === id);
+      
+      const updatedSession = sessionState ?? existing?.sessionState;
+      const updatedEvents = events ?? existing?.events;
+
+      // Prevent overwriting valid historical sessions with initial/blank ones during socket bootstrapping
+      if (existing?.sessionState && !sessionState?.sessionId) {
+        return prevThreads;
+      }
+      
+      // Avoid infinite React re-render loops if state is structurally identical
+      if (
+        JSON.stringify(existing?.sessionState) === JSON.stringify(updatedSession) &&
+        JSON.stringify(existing?.events) === JSON.stringify(updatedEvents)
+      ) {
+        return prevThreads;
+      }
+
       const updated = prevThreads.map((t) => 
-        t.id === id ? { ...t, sessionState } : t
+        t.id === id ? { ...t, sessionState: updatedSession, events: updatedEvents } : t
       );
       saveThreads(updated);
       return updated;
@@ -172,7 +191,7 @@ interface ChatInterfaceContentProps {
   readonly setIsLeftOpen: (open: boolean) => void;
   readonly onNewChat: () => void;
   readonly onSelectThread: (id: string) => void;
-  readonly onSessionChange: (id: string, session: any) => void;
+  readonly onSessionChange: (id: string, session: any, events?: readonly any[]) => void;
   readonly onUpdateThreadTitle: (id: string, firstMessage: string) => void;
 }
 
@@ -210,11 +229,7 @@ function ChatInterfaceContent({
 
   const agent = useEveAgent({
     initialSession: activeThread?.sessionState,
-    onSessionChange: (session) => {
-      if (activeThread) {
-        onSessionChange(activeThread.id, session);
-      }
-    },
+    initialEvents: activeThread?.events,
     headers: async () => {
       const token = await getToken();
       return {
@@ -222,6 +237,13 @@ function ChatInterfaceContent({
       };
     },
   });
+
+  // Continually synchronize latest session and events to the master localStorage
+  useEffect(() => {
+    if (activeThread && (agent.session || (agent.events && agent.events.length > 0))) {
+      onSessionChange(activeThread.id, agent.session, agent.events);
+    }
+  }, [agent.session, agent.events, activeThread?.id, onSessionChange]);
 
   const isBusy = agent.status === "submitted" || agent.status === "streaming";
   const messages = agent.data.messages;
@@ -355,11 +377,9 @@ function ChatInterfaceContent({
         </div>
       </header>
 
-      {/* Main viewport split into gutters + centered chat */}
       <div className="flex-1 flex items-center justify-between overflow-hidden p-6 bg-slate-50/50 gap-6">
         <HistorySidebar 
           isOpen={isLeftOpen} 
-          onClose={() => setIsLeftOpen(false)} 
           onNewChat={onNewChat}
           threads={threads}
           activeThreadId={activeThread?.id}
@@ -463,7 +483,6 @@ function ChatInterfaceContent({
 
         <DiagnosticsConsole 
           isOpen={isRightOpen} 
-          onClose={() => setIsRightOpen(false)} 
           messages={messages}
           isBusy={isBusy}
           onTicketClick={handleTicketClick}
@@ -561,7 +580,7 @@ function MessagePart({ part, isUser }: { readonly part: EveMessagePart; readonly
     }
 
     case "reasoning":
-      return <ReasoningPart text={part.text} />;
+      return null;
 
     case "file":
       return (

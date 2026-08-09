@@ -1,6 +1,6 @@
 "use client";
 
-import { MessageSquare, PanelLeftClose, Sparkles, Plus, Calendar } from "lucide-react";
+import { MessageSquare, History, Plus, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -8,12 +8,12 @@ export interface Thread {
   id: string;
   title: string;
   sessionState?: any;
+  events?: readonly any[];
   createdAt: number;
 }
 
 interface HistorySidebarProps {
   readonly isOpen: boolean;
-  readonly onClose: () => void;
   readonly onNewChat: () => void;
   readonly threads?: readonly Thread[];
   readonly activeThreadId?: string;
@@ -22,7 +22,6 @@ interface HistorySidebarProps {
 
 export default function HistorySidebar({ 
   isOpen, 
-  onClose, 
   onNewChat,
   threads = [],
   activeThreadId,
@@ -36,17 +35,9 @@ export default function HistorySidebar({
       {/* Sidebar Header */}
       <div className="p-4 border-b border-border/40 flex items-center justify-between shrink-0 bg-slate-50/50">
         <span className="text-xs font-bold text-[#005F9E] tracking-wider flex items-center gap-1.5 uppercase font-mono">
-          <Sparkles className="h-4 w-4 text-[#005F9E]" />
+          <History className="h-4 w-4 text-[#005F9E]" />
           Chat History
         </span>
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={onClose} 
-          className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground"
-        >
-          <PanelLeftClose className="h-4 w-4" />
-        </Button>
       </div>
 
       {/* New Chat CTA */}
