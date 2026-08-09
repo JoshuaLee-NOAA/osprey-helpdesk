@@ -33,23 +33,165 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
-import HistorySidebar from "./components/HistorySidebar";
+import HistorySidebar, { type Thread } from "./components/HistorySidebar";
 import DiagnosticsConsole from "./components/DiagnosticsConsole";
 import { getJiraTicketsAction, type TicketItem } from "./actions";
 
-
-
 interface ChatInterfaceProps {
-  user: {
+  readonly user: {
     name: string;
     email: string;
     imageUrl: string;
   };
 }
 
+/**
+ * ChatInterface acts as the state manager for chronological chat threads.
+ * Persists and loads previous conversation metadata and cursors to localStorage.
+ */
 export default function ChatInterface({ user }: ChatInterfaceProps) {
-  const [input, setInput] = useState("");
+  const [threads, setThreads] = useState<Thread[]>([]);
+  const [activeThreadId, setActiveThreadId] = useState<string>("");
   const [isLeftOpen, setIsLeftOpen] = useState(true);
+
+  // 1. Rehydrate threads list on mount
+  useEffect(() => {
+    if (!user.email) return;
+    const localStorageKey = `osprey_threads_${user.email}`;
+    const saved = localStorage.getItem(localStorageKey);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setThreads(parsed);
+          setActiveThreadId(parsed[0].id);
+          return;
+        }
+      } catch (e) {
+        console.error("Failed to parse saved threads:", e);
+      }
+    }
+
+    // First launch fallback
+    const initialThread: Thread = {
+      id: Math.random().toString(36).substring(2, 15),
+      title: "New Chat",
+      createdAt: Date.now(),
+    };
+    setThreads([initialThread]);
+    setActiveThreadId(initialThread.id);
+  }, [user.email]);
+
+  const saveThreads = useCallback((updatedThreads: Thread[]) => {
+    if (!user.email) return;
+    const localStorageKey = `osprey_threads_${user.email}`;
+    localStorage.setItem(localStorageKey, JSON.stringify(updatedThreads));
+  }, [user.email]);
+
+  const handleNewChat = () => {
+    const newThread: Thread = {
+      id: Math.random().toString(36).substring(2, 15),
+      title: "New Chat",
+      createdAt: Date.now(),
+    };
+    const updated = [newThread, ...threads];
+    setThreads(updated);
+    setActiveThreadId(newThread.id);
+    saveThreads(updated);
+  };
+
+  const handleSelectThread = (id: string) => {
+    setActiveThreadId(id);
+  };
+
+  const handleSessionChange = (id: string, sessionState: any) => {
+    setThreads((prevThreads) => {
+      const updated = prevThreads.map((t) => 
+        t.id === id ? { ...t, sessionState } : t
+      );
+      saveThreads(updated);
+      return updated;
+    });
+  };
+
+  const handleUpdateThreadTitle = (id: string, firstMessage: string) => {
+    setThreads((prevThreads) => {
+      const updated = prevThreads.map((t) => {
+        if (t.id === id && t.title === "New Chat") {
+          const cleanText = firstMessage
+            .replace(/^\[System Context:[^\]]+\]\s*/i, "")
+            .trim();
+          const truncated = cleanText.length > 32 ? cleanText.slice(0, 30) + "..." : cleanText;
+          return { ...t, title: truncated || "Dynamic Chat" };
+        }
+        return t;
+      });
+      saveThreads(updated);
+      return updated;
+    });
+  };
+
+  if (!activeThreadId) {
+    return (
+      <div className="flex-1 flex items-center justify-center bg-slate-50/50 w-full h-full min-h-screen">
+        <div className="flex flex-col items-center gap-2">
+          <Loader2 className="h-8 w-8 text-[#005F9E] animate-spin" />
+          <span className="text-xs font-mono font-bold text-slate-400 tracking-wider">LOADING USER SESSIONS...</span>
+        </div>
+      </div>
+    );
+  }
+
+  const activeThread = threads.find((t) => t.id === activeThreadId);
+
+  return (
+    <ChatInterfaceContent
+      key={activeThreadId} // Strict key forcing full React remount on thread swap to bind correct store session
+      user={user}
+      activeThread={activeThread}
+      threads={threads}
+      isLeftOpen={isLeftOpen}
+      setIsLeftOpen={setIsLeftOpen}
+      onNewChat={handleNewChat}
+      onSelectThread={handleSelectThread}
+      onSessionChange={handleSessionChange}
+      onUpdateThreadTitle={handleUpdateThreadTitle}
+    />
+  );
+}
+
+interface ChatInterfaceContentProps {
+  readonly user: {
+    name: string;
+    email: string;
+    imageUrl: string;
+  };
+  readonly activeThread: Thread | undefined;
+  readonly threads: readonly Thread[];
+  readonly isLeftOpen: boolean;
+  readonly setIsLeftOpen: (open: boolean) => void;
+  readonly onNewChat: () => void;
+  readonly onSelectThread: (id: string) => void;
+  readonly onSessionChange: (id: string, session: any) => void;
+  readonly onUpdateThreadTitle: (id: string, firstMessage: string) => void;
+}
+
+/**
+ * Houses the active conversation viewport. Establishes the real useEveAgent hook
+ * rehydrated by the active thread's cached session cursor.
+ */
+function ChatInterfaceContent({
+  user,
+  activeThread,
+  threads,
+  isLeftOpen,
+  setIsLeftOpen,
+  onNewChat,
+  onSelectThread,
+  onSessionChange,
+  onUpdateThreadTitle,
+}: ChatInterfaceContentProps) {
+  const [input, setInput] = useState("");
   const [isRightOpen, setIsRightOpen] = useState(true);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const { getToken } = useAuth();
@@ -67,6 +209,12 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
   }, [user.email]);
 
   const agent = useEveAgent({
+    initialSession: activeThread?.sessionState,
+    onSessionChange: (session) => {
+      if (activeThread) {
+        onSessionChange(activeThread.id, session);
+      }
+    },
     headers: async () => {
       const token = await getToken();
       return {
@@ -87,7 +235,6 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
   }, [fetchTickets]);
 
   useEffect(() => {
-    // Whenever isBusy transitions from true to false, re-fetch live tickets
     if (prevBusyRef.current && !isBusy) {
       console.log("[ChatInterface] Agent completed conversational turn. Re-fetching live Jira tickets...");
       fetchTickets();
@@ -99,7 +246,6 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
     const container = scrollContainerRef.current;
     if (!container) return;
 
-    // Scroll helper supporting custom behavior (smooth vs instant)
     const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
       container.scrollTo({
         top: container.scrollHeight,
@@ -107,13 +253,9 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
       });
     };
 
-    // Use instant scrolling during live text streaming for rock-solid anchors
     const scrollBehavior = agent.status === "streaming" ? "auto" : "smooth";
-
-    // Scroll immediately on new messages or status changes
     scrollToBottom(scrollBehavior);
 
-    // Use ResizeObserver to lock scroll to bottom seamlessly as text streams
     const observer = new ResizeObserver(() => {
       const isNearBottom =
         container.scrollHeight - container.scrollTop - container.clientHeight < 300;
@@ -135,7 +277,11 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
     if (!trimmed || isBusy) return;
     setInput("");
 
-    // Prepend system context identity to every message of the session
+    // If this is the pristine first turn, dynamically re-title the thread
+    if (visibleMessages.length === 0 && activeThread) {
+      onUpdateThreadTitle(activeThread.id, trimmed);
+    }
+
     if (user) {
       trimmed = `[System Context: Current authenticated user is ${user.name} with email ${user.email}.]\n\n${trimmed}`;
     }
@@ -147,13 +293,8 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
     }
   };
 
-  const handleTicketClick = (summary: string, id: string) => {
-    handleSend(`Please give me a status update on ticket ${id}: ${summary}`);
-  };
-
-  const handleNewChat = () => {
-    // Force a fresh reload to reset session state and launch a pristine conversational thread
-    window.location.reload();
+  const handleTicketClick = (summary: string, key: string) => {
+    handleSend(`Please give me a status update on ticket ${key}: ${summary}`);
   };
 
   return (
@@ -161,7 +302,6 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
       {/* Full-width Top Header */}
       <header className="h-14 border-b border-border flex items-center justify-between px-6 shrink-0 bg-background z-20">
         <div className="flex items-center gap-2">
-          {/* Left Sidebar Toggle */}
           <Button 
             variant="ghost" 
             size="icon" 
@@ -194,7 +334,6 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
         </div>
 
         <div className="flex items-center gap-2.5">
-          {/* Right Sidebar Toggle */}
           <Button 
             variant="ghost" 
             size="icon" 
@@ -216,20 +355,19 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
         </div>
       </header>
 
-      {/* Main viewport below header split into gutters + centered chat */}
+      {/* Main viewport split into gutters + centered chat */}
       <div className="flex-1 flex items-center justify-between overflow-hidden p-6 bg-slate-50/50 gap-6">
-        {/* Left Sidebar History Drawer - Clean Gemini-Style */}
         <HistorySidebar 
           isOpen={isLeftOpen} 
           onClose={() => setIsLeftOpen(false)} 
-          onNewChat={handleNewChat}
+          onNewChat={onNewChat}
+          threads={threads}
+          activeThreadId={activeThread?.id}
+          onSelectThread={onSelectThread}
         />
 
-        {/* Centered chat wrapper */}
         <div className="flex-1 flex items-center justify-center h-full">
-          {/* Bounded Center Chat Area - STRICT fixed height and width */}
           <div className="w-full max-w-3xl h-[82vh] min-h-[480px] max-h-[850px] bg-background border border-border rounded-2xl flex flex-col shadow-md relative overflow-hidden">
-            {/* Chat Column */}
             <div ref={scrollContainerRef} className="flex-1 overflow-y-auto scroll-smooth">
               <div className="px-6 py-10 flex flex-col min-h-full">
                 {isEmpty ? (
@@ -275,23 +413,26 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex-1 flex flex-col gap-6">
+                  <div className="flex flex-col gap-6 w-full">
                     {visibleMessages.map((message) => (
-                      <ChatMessage key={message.id} message={message} userImageUrl={user.imageUrl} />
+                      <ChatMessage
+                        key={message.id}
+                        message={message}
+                        userImageUrl={user.imageUrl}
+                      />
                     ))}
+                    {isBusy && agent.status !== "streaming" && (
+                      <div className="flex items-center gap-2.5 px-2.5 text-muted-foreground select-none">
+                        <Loader2 className="h-4 w-4 animate-spin text-[#005F9E]" />
+                        <span className="text-xs font-semibold tracking-wider font-mono">Osprey is thinking...</span>
+                      </div>
+                    )}
                   </div>
                 )}
-
-                {agent.error ? (
-                  <p className="text-xs text-destructive font-medium text-center mt-4">
-                    {agent.error.message}
-                  </p>
-                ) : null}
               </div>
             </div>
 
-            {/* Message Input */}
-            <div className="shrink-0 px-6 pb-6 pt-4 border-t border-border/40 bg-background z-10">
+            <div className="p-4 border-t border-border shrink-0 bg-background">
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -311,7 +452,7 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
                   type="submit"
                   size="icon"
                   disabled={!input.trim() || isBusy}
-                  className="absolute right-1.5 h-9 w-9 rounded-full"
+                  className="absolute right-1.5 h-9 w-9 rounded-full bg-gradient-to-r from-[#005F9E] to-[#0085CA]"
                 >
                   <Send className="h-4 w-4" />
                 </Button>
@@ -320,7 +461,6 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
           </div>
         </div>
 
-        {/* Right Sidebar - Support Tickets Stacked on top of minimized AI Diagnostics Console */}
         <DiagnosticsConsole 
           isOpen={isRightOpen} 
           onClose={() => setIsRightOpen(false)} 
@@ -469,7 +609,6 @@ function SubagentToolCard({ part }: { readonly part: EveDynamicToolPart }) {
 
   return (
     <div className="flex flex-col gap-1.5 my-1.5 w-full min-w-[300px] sm:min-w-[420px]">
-      {/* Tool Icon and Label above the card container */}
       <div className="flex items-center gap-1.5 px-1 text-muted-foreground select-none">
         <Wrench className="h-3.5 w-3.5 text-[#005F9E]" />
         <span className="text-[10px] font-mono uppercase tracking-widest font-black">
@@ -519,9 +658,11 @@ function hasVisibleContent(message: EveMessage): boolean {
         return part.text.trim().length > 0;
       case "reasoning":
         return part.text.trim().length > 0;
-      case "file":
-      case "authorization":
       case "dynamic-tool":
+        return true;
+      case "authorization":
+        return true;
+      case "file":
         return true;
       default:
         return false;
@@ -530,163 +671,154 @@ function hasVisibleContent(message: EveMessage): boolean {
 }
 
 function MarkdownRenderer({ text }: { readonly text: string }) {
-  // Split text by lines
-  const lines = text.split("\n");
-  const elements: React.ReactNode[] = [];
-  
-  let inList = false;
-  let listItems: React.ReactNode[] = [];
-  let listKey = 0;
+  interface ParsedContent {
+    type: "paragraph" | "list" | "heading" | "codeblock";
+    text: string;
+    items?: string[];
+  }
 
-  const flushList = () => {
-    if (listItems.length > 0) {
-      elements.push(
-        <ul key={`list-${listKey++}`} className="list-disc pl-5 my-2 space-y-1">
-          {listItems}
-        </ul>
-      );
-      listItems = [];
-      inList = false;
+  const parseMarkdown = (raw: string): ParsedContent[] => {
+    const lines = raw.split("\n");
+    const blocks: ParsedContent[] = [];
+    let currentList: string[] = [];
+
+    const flushList = () => {
+      if (currentList.length > 0) {
+        blocks.push({ type: "list", text: "", items: [...currentList] });
+        currentList = [];
+      }
+    };
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const trimmed = line.trim();
+
+      // Heading blocks (###)
+      if (trimmed.startsWith("###")) {
+        flushList();
+        blocks.push({ type: "heading", text: trimmed.slice(3).trim() });
+        continue;
+      }
+
+      // Codeblocks
+      if (trimmed.startsWith("```")) {
+        flushList();
+        let codeLines = [];
+        i++;
+        while (i < lines.length && !lines[i].trim().startsWith("```")) {
+          codeLines.push(lines[i]);
+          i++;
+        }
+        blocks.push({ type: "codeblock", text: codeLines.join("\n") });
+        continue;
+      }
+
+      // Chronological Bullet lists
+      if (trimmed.startsWith("* ") || trimmed.startsWith("- ")) {
+        currentList.push(trimmed.slice(2).trim());
+        continue;
+      }
+
+      // Ordered number lists (e.g. 1.)
+      if (/^\d+\.\s+/.test(trimmed)) {
+        currentList.push(trimmed.replace(/^\d+\.\s+/, "").trim());
+        continue;
+      }
+
+      // Normal text or paragraph breaks
+      if (trimmed === "") {
+        flushList();
+      } else {
+        flushList();
+        blocks.push({ type: "paragraph", text: trimmed });
+      }
     }
+
+    flushList();
+    return blocks;
   };
 
-  const parseInlineStyles = (content: string): React.ReactNode[] => {
-    const parts: React.ReactNode[] = [];
-    let currentText = content;
-    let index = 0;
+  const renderInlineStyles = (rawText: string) => {
+    // 1. Double Bold matcher **text**
+    const boldRegex = /\*\*(.*?)\*\*/g;
+    // 2. Inline code matcher `code`
+    const codeRegex = /`(.*?)`/g;
+    // 3. Anchor hyperlink matcher [text](url)
+    const linkRegex = /\[(.*?)\]\((.*?)\)/g;
 
-    while (currentText.length > 0) {
-      const boldIdx = currentText.indexOf("**");
-      const codeIdx = currentText.indexOf("`");
-      const linkIdx = currentText.search(/\[.*?\]\(.*?\)/);
+    let parts: React.ReactNode[] = [];
+    let lastIndex = 0;
+    let match;
 
-      const targets = [
-        { type: "bold", idx: boldIdx },
-        { type: "code", idx: codeIdx },
-        { type: "link", idx: linkIdx }
-      ].filter(t => t.idx !== -1);
+    // We do a combined loop for inline elements
+    const combinedRegex = /(\*\*.*?\*\*|`.*?`|\[.*?\]\(.*?\))/g;
+    const tokens = rawText.split(combinedRegex);
 
-      if (targets.length === 0) {
-        parts.push(<span key={index++}>{currentText}</span>);
-        break;
+    return tokens.map((token, index) => {
+      if (token.startsWith("**") && token.endsWith("**")) {
+        return <strong key={index} className="font-black text-slate-900 bg-slate-100/40 px-1 py-0.5 rounded">{token.slice(2, -2)}</strong>;
       }
-
-      targets.sort((a, b) => a.idx - b.idx);
-      const first = targets[0];
-
-      if (first.idx > 0) {
-        parts.push(<span key={index++}>{currentText.substring(0, first.idx)}</span>);
+      if (token.startsWith("`") && token.endsWith("`")) {
+        return <code key={index} className="font-mono text-xs font-bold text-[#005F9E] bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200/50">{token.slice(1, -1)}</code>;
       }
-
-      currentText = currentText.substring(first.idx);
-
-      if (first.type === "bold") {
-        const closingIdx = currentText.indexOf("**", 2);
-        if (closingIdx !== -1) {
-          const boldText = currentText.substring(2, closingIdx);
-          parts.push(<strong key={index++} className="font-extrabold text-foreground">{boldText}</strong>);
-          currentText = currentText.substring(closingIdx + 2);
-        } else {
-          parts.push(<span key={index++}>**</span>);
-          currentText = currentText.substring(2);
-        }
-      } else if (first.type === "code") {
-        const closingIdx = currentText.indexOf("`", 1);
-        if (closingIdx !== -1) {
-          const codeText = currentText.substring(1, closingIdx);
-          parts.push(<code key={index++} className="bg-slate-100 text-[#005F9E] font-mono text-xs px-1.5 py-0.5 rounded border border-slate-200/50">{codeText}</code>);
-          currentText = currentText.substring(closingIdx + 1);
-        } else {
-          parts.push(<span key={index++}>`</span>);
-          currentText = currentText.substring(1);
-        }
-      } else if (first.type === "link") {
-        const match = currentText.match(/^\[(.*?)\]\((.*?)\)/);
-        if (match) {
-          const linkText = match[1];
-          const url = match[2];
-          parts.push(
-            <a key={index++} href={url} target="_blank" rel="noopener noreferrer" className="text-[#005F9E] hover:text-[#0085CA] underline font-semibold inline-flex items-center gap-0.5">
-              {linkText}
+      if (token.startsWith("[") && token.includes("](")) {
+        const linkMatch = token.match(/\[(.*?)\]\((.*?)\)/);
+        if (linkMatch) {
+          return (
+            <a 
+              key={index} 
+              href={linkMatch[2]} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="text-[#005F9E] hover:underline font-bold inline-flex items-center gap-0.5 hover:text-[#0085CA]"
+            >
+              {linkMatch[1]}
             </a>
           );
-          currentText = currentText.substring(match[0].length);
-        } else {
-          parts.push(<span key={index++}>[</span>);
-          currentText = currentText.substring(1);
         }
       }
-    }
-
-    return parts;
+      return token;
+    });
   };
 
-  lines.forEach((line, lineIdx) => {
-    const trimmed = line.trim();
+  const blocks = parseMarkdown(text);
 
-    // Headers
-    if (trimmed.startsWith("### ")) {
-      flushList();
-      elements.push(
-        <h4 key={lineIdx} className="text-xs font-extrabold text-[#005F9E] mt-4 mb-2 first:mt-1 flex items-center gap-1.5 border-b border-slate-100 pb-1 uppercase font-mono tracking-wider">
-          {parseInlineStyles(trimmed.substring(4))}
-        </h4>
-      );
-    } else if (trimmed.startsWith("## ")) {
-      flushList();
-      elements.push(
-        <h3 key={lineIdx} className="text-sm font-extrabold text-[#005F9E] mt-5 mb-2 flex items-center gap-1.5 border-b border-slate-100 pb-1">
-          {parseInlineStyles(trimmed.substring(3))}
-        </h3>
-      );
-    } else if (trimmed.startsWith("# ")) {
-      flushList();
-      elements.push(
-        <h2 key={lineIdx} className="text-base font-black text-[#005F9E] mt-6 mb-3 border-b border-border pb-1.5">
-          {parseInlineStyles(trimmed.substring(2))}
-        </h2>
-      );
-    }
-    // Bullet Lists (matches *, -, +)
-    else if (trimmed.startsWith("* ") || trimmed.startsWith("- ") || trimmed.startsWith("+ ")) {
-      inList = true;
-      const bulletContent = trimmed.substring(2);
-      listItems.push(
-        <li key={`li-${lineIdx}`} className="text-xs text-slate-700 leading-relaxed font-medium pl-1 list-disc">
-          {parseInlineStyles(bulletContent)}
-        </li>
-      );
-    }
-    // Numbered lists (matches e.g., "1. ")
-    else if (/^\d+\.\s/.test(trimmed)) {
-      flushList();
-      const content = trimmed.replace(/^\d+\.\s/, "");
-      elements.push(
-        <div key={lineIdx} className="flex gap-2 text-xs text-slate-700 leading-relaxed pl-1 my-1">
-          <span className="font-extrabold text-[#005F9E] shrink-0 font-mono">{trimmed.match(/^\d+/)?.[0]}.</span>
-          <span className="font-medium">{parseInlineStyles(content)}</span>
-        </div>
-      );
-    }
-    // Empty Line
-    else if (trimmed === "") {
-      flushList();
-      if (elements.length > 0 && lineIdx < lines.length - 1) {
-        elements.push(<div key={`space-${lineIdx}`} className="h-1.5" />);
-      }
-    }
-    // Regular Paragraph
-    else {
-      flushList();
-      elements.push(
-        <p key={lineIdx} className="text-xs text-slate-700 leading-relaxed font-medium my-1">
-          {parseInlineStyles(line)}
-        </p>
-      );
-    }
-  });
-
-  flushList();
-
-  return <div className="flex flex-col gap-0.5">{elements}</div>;
+  return (
+    <div className="flex flex-col gap-3.5 text-foreground leading-relaxed">
+      {blocks.map((block, index) => {
+        switch (block.type) {
+          case "heading":
+            return (
+              <h4 key={index} className="text-sm font-black text-slate-800 tracking-wide mt-2 border-b border-slate-100 pb-1 uppercase font-mono">
+                {block.text}
+              </h4>
+            );
+          case "codeblock":
+            return (
+              <pre key={index} className="text-xs bg-slate-900 text-slate-100 rounded-xl p-3.5 overflow-x-auto whitespace-pre font-mono leading-normal shadow-inner border border-slate-800">
+                <code>{block.text}</code>
+              </pre>
+            );
+          case "list":
+            return (
+              <ul key={index} className="list-none flex flex-col gap-2 pl-1.5 py-0.5">
+                {block.items?.map((item, itemIdx) => (
+                  <li key={itemIdx} className="text-sm flex items-start gap-2.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#005F9E] mt-2 shrink-0 shadow-xs" />
+                    <span className="flex-1 leading-normal font-medium">{renderInlineStyles(item)}</span>
+                  </li>
+                ))}
+              </ul>
+            );
+          case "paragraph":
+          default:
+            return (
+              <p key={index} className="text-sm leading-relaxed font-medium">
+                {renderInlineStyles(block.text)}
+              </p>
+            );
+        }
+      })}
+    </div>
+  );
 }

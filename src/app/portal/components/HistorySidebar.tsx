@@ -1,23 +1,33 @@
 "use client";
 
-import { MessageSquare, PanelLeftClose, Sparkles, Plus } from "lucide-react";
+import { MessageSquare, PanelLeftClose, Sparkles, Plus, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+
+export interface Thread {
+  id: string;
+  title: string;
+  sessionState?: any;
+  createdAt: number;
+}
 
 interface HistorySidebarProps {
   readonly isOpen: boolean;
   readonly onClose: () => void;
   readonly onNewChat: () => void;
+  readonly threads?: readonly Thread[];
+  readonly activeThreadId?: string;
+  readonly onSelectThread?: (id: string) => void;
 }
 
-export default function HistorySidebar({ isOpen, onClose, onNewChat }: HistorySidebarProps) {
-  // Ultra-clean Gemini-style chronological list of past conversations
-  const mockConversations = [
-    { id: "1", title: "Deploy GCP Science Workstation", date: "Today", active: true },
-    { id: "2", title: "Request Figma Seat for Staging", date: "Yesterday", active: false },
-    { id: "3", title: "MFA Reset Code Failure", date: "3 days ago", active: false },
-    { id: "4", title: "Configuring Slack Channel Access", date: "Last week", active: false },
-  ];
+export default function HistorySidebar({ 
+  isOpen, 
+  onClose, 
+  onNewChat,
+  threads = [],
+  activeThreadId,
+  onSelectThread
+}: HistorySidebarProps) {
 
   if (!isOpen) return null;
 
@@ -50,28 +60,44 @@ export default function HistorySidebar({ isOpen, onClose, onNewChat }: HistorySi
         </Button>
       </div>
 
-      {/* Gemini-Style Chat Log Feed */}
-      <div className="flex-1 overflow-y-auto px-3 pb-4 flex flex-col gap-1.5 scroll-smooth">
-        <span className="text-[10px] font-bold text-muted-foreground tracking-widest uppercase px-3 py-1">
-          Recent
-        </span>
-        <div className="flex flex-col gap-1">
-          {mockConversations.map((chat) => (
-            <button
-              key={chat.id}
-              className={cn(
-                "w-full text-left rounded-xl px-3 py-2.5 text-xs font-medium flex items-center gap-2.5 transition-all duration-200 border border-transparent group",
-                chat.active 
-                  ? "bg-[#005F9E]/5 border-[#005F9E]/10 text-[#005F9E]" 
-                  : "text-muted-foreground hover:bg-slate-100/60 hover:text-foreground"
-              )}
-            >
-              <MessageSquare className={cn("h-4 w-4 shrink-0", chat.active ? "text-[#005F9E]" : "text-muted-foreground/60")} />
-              <span className="truncate font-semibold flex-1 text-foreground group-hover:text-[#005F9E] transition-colors">
-                {chat.title}
-              </span>
-            </button>
-          ))}
+      {/* Dynamic Chronological Chat Log Feed */}
+      <div className="flex-1 overflow-y-auto px-3 pb-4 flex flex-col gap-3 scroll-smooth">
+        <div className="flex flex-col gap-1.5">
+          <span className="text-[10px] font-bold text-muted-foreground tracking-widest uppercase px-3 py-1 flex items-center gap-1">
+            <Calendar className="h-3 w-3" />
+            Recent Chats ({threads.length})
+          </span>
+          <div className="flex flex-col gap-1">
+            {threads.length === 0 ? (
+              <p className="text-[11px] text-muted-foreground px-3 py-2 italic font-medium">
+                No recent chat sessions.
+              </p>
+            ) : (
+              threads.map((chat) => {
+                const isActive = chat.id === activeThreadId;
+                return (
+                  <button
+                    key={chat.id}
+                    onClick={() => onSelectThread?.(chat.id)}
+                    className={cn(
+                      "w-full text-left rounded-xl px-3 py-2.5 text-xs font-medium flex items-center gap-2.5 transition-all duration-200 border border-transparent group cursor-pointer",
+                      isActive 
+                        ? "bg-[#005F9E]/5 border-[#005F9E]/10 text-[#005F9E]" 
+                        : "text-muted-foreground hover:bg-slate-100/60 hover:text-foreground"
+                    )}
+                  >
+                    <MessageSquare className={cn("h-4 w-4 shrink-0", isActive ? "text-[#005F9E]" : "text-muted-foreground/60")} />
+                    <span className={cn(
+                      "truncate flex-1 group-hover:text-[#005F9E] transition-colors leading-relaxed",
+                      isActive ? "text-[#005F9E] font-bold" : "text-foreground font-semibold"
+                    )}>
+                      {chat.title}
+                    </span>
+                  </button>
+                );
+              })
+            )}
+          </div>
         </div>
       </div>
     </div>
