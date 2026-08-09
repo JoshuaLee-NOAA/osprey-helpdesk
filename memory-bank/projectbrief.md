@@ -4,40 +4,48 @@
 
 Osprey is an AI-powered autonomous IT helpdesk built on Vercel's **Eve** agent framework and **Next.js 16**. It runs as a single unified project — Eve's `withEve()` wrapper mounts the agent runtime alongside the Next.js app server, so `npm run dev` boots both simultaneously with zero CORS/env overhead.
 
-The system uses a **filesystem-first, supervisor + subagents** architecture:
-- A root supervisor agent (`agent/agent.ts` + `agent/instructions.md`) triages employee requests and delegates to specialized child agents.
-- `jira-agent` — searches for duplicate tickets and creates new Jira issues.
-- `workspace-agent` — sends Gmail confirmations, posts Google Chat alerts, and schedules calendar sessions.
-- A native **Human-in-the-Loop (HITL)** mechanism (Eve's built-in `needsApproval` property on `defineTool`) pauses high-risk tool calls until an IT Admin approves, modifies, or rejects them.
+The system uses a **filesystem-first, supervisor + subagents** architecture with **100% real, live integrations** (no mocking layers) connecting securely to real-world cloud and ticketing endpoints:
+- **Supervisor** (`agent/agent.ts` + `agent/instructions.md`) — Triage center that coordinates requests and delegates to specialized child subagents.
+- **`jira-agent`** — Connects to real Jira Cloud REST APIs to perform similar duplicate ticket searches and create active support tickets.
+- **`workspace-agent`** — Authenticates Google Cloud service accounts using official `googleapis` SDKs to dispatch real Gmail confirmations, post to real Google Chat webhooks, and schedule real Google Calendar events.
+- **`gcp-agent`** — Connects to your Google Cloud Organization to provision real, active GCP projects and triggers local **Terraform CLI sub-process scripts** (`terraform init && terraform apply`) to deploy secure, VM-backed science workstations autonomously.
+- A native **Human-in-the-Loop (HITL)** mechanism (Eve's built-in `needsApproval` property on `defineTool`) pauses high-risk tool calls (like GPU workstation sizes or external emails) until an IT Admin approves, modifies, or rejects them.
+
+---
 
 ## Core Goals
 
-1. **Single-Server Unified Development** — one `npm run dev` command runs the full stack (Next.js + Eve agent runtime).
-2. **Native Multi-Agent Orchestration** — Eve's file-based `subagents` convention cleanly segregates Jira and Google Workspace domain logic.
-3. **Durable Human-in-the-Loop (HITL)** — Eve's native `needsApproval` hook creates zero-compute, state-serialized pauses for high-risk actions (no custom pause/resume mechanism built from scratch).
-4. **Persistent, Immutable Audit Logging** — every agent state, tool approval, and payload revision is logged to Supabase and cannot be altered after the fact.
-5. **Premium Dual-Portal UX**:
-   - `/portal` — lightweight conversational assistant for employees (`useEveAgent` client hook).
-   - `/dashboard/hitl` — high-density, real-time command center for IT Administrators.
+1. **100% Real, Live API Integrations** — Zero mocking layers. All operations connect directly to active Jira Cloud instances, Google Workspace profiles, and real Google Cloud Organizations.
+2. **Single-Server Unified Development** — One `npm run dev` command runs the full stack (Next.js + Eve agent runtime).
+3. **Multi-Agent Cloud & Ticketing Orchestration** — Clean segregation of ticketing (Jira), messaging (Workspace), and DevOps/Infrastructure (GCP + Terraform) logic across file-based subagents.
+4. **Durable Human-in-the-Loop (HITL)** — Eve's native `needsApproval` hook creates zero-compute, state-serialized pauses for high-risk actions.
+5. **Persistent, Immutable Audit Logging** — Every agent state, tool approval, and payload revision is logged to a real Supabase database and made immutable via database triggers.
+6. **Premium Dual-Portal UX**:
+   - `/portal` — A beautiful, centered, floating chat card vertically and horizontally centered in the viewport, flanked by two collapsible drawers:
+     - **Left Sidebar**: Conversational history list, a relocated "New Chat" trigger, and live active/resolved Jira ticket listings.
+     - **Right Sidebar**: monospaced terminal streaming Osprey's live reasoning thoughts and a visual active-tool connectivity monitor with Zod JSON arguments inspector.
+   - `/dashboard/hitl` — High-density real-time command center table driven by Supabase Realtime subscriptions.
+
+---
 
 ## Success Metrics
 
-- **Seamless Triage**: ≥70% of routine queries are resolved or prepared for execution automatically without manual human ticket routing.
-- **100% Interception**: All defined "high-risk" tools are intercepted by Eve's durable `needsApproval` workflow state — none slip through.
+- **Autonomous Resolution**: ≥70% of standard IT operations (like pre-approved software licensing and standard science workstation deployments) are completed fully autonomously within seconds.
+- **100% Interception**: All defined high-risk actions (GPU VM types, custom SSD bounds, external emails) are reliably caught by Eve's native `needsApproval` loop—0% leakage.
 - **Zero CORS/Env Overhead**: Single-origin deployment guarantees no CORS configuration issues or mismatched route environment variables.
-- Reduced manual workload / approvals burden for IT staff (this is the headline demo goal — showcasing what Eve + AI agents can do for IT ops).
+- **Zero-Friction Dev Environment**: A single securely-vaulted `.env.local` configuration powers full operations with integrated credential health checks.
+
+---
 
 ## Non-Goals (Out of Scope)
 
-- Complex local auto-remediation (e.g., agent directly executing scripts on an end-user's machine).
-- Handling non-IT queries (HR, payroll, etc.) — strictly IT support scope.
-- Any feature that doesn't directly contribute to showcasing the Eve framework or core multi-agent/HITL operations.
+- Complex local auto-remediation (e.g., executing scripts directly on an end-user's local operating system).
+- Handling non-IT queries (strictly IT support scope).
+- Any feature that doesn't directly contribute to showcasing Eve framework capabilities, multi-agent coordination, or durable HITL.
+
+---
 
 ## Target Users
 
-- **Internal employees** (End Users) — report issues conversationally via `/portal`.
-- **IT Administrators** (Staff) — review and resolve HITL approvals via `/dashboard/hitl`.
-
-## Provenance
-
-This brief distills `prd-osprey-helpdesk.md`, the original Product Requirements Document (now removed from the project root — its full content lives across this Memory Bank, primarily here and in `productContext.md`, `systemPatterns.md`, and `progress.md`).
+- **Internal employees / scientists** (End Users) — Request standard catalog software, book support slots, and provision cloud science workstations via `/portal`.
+- **IT Administrators** (Staff) — Review, edit, and resume suspended high-risk cloud and messaging transactions via `/dashboard/hitl`.
