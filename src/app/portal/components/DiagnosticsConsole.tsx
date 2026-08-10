@@ -324,8 +324,10 @@ export default function DiagnosticsConsole({
                   Chronological log of specialized subagent handoffs and executed backend integrations.
                 </p>
 
-                {/* Timeline component */}
-                <div className="flex flex-col gap-4 pl-3 border-l border-slate-200 ml-1.5 flex-1 overflow-y-auto">
+                {/* Scrollable Container with horizontal padding to prevent absolute clipping */}
+                <div className="flex-1 overflow-y-auto pr-1 pl-4 pb-2">
+                  {/* Timeline component with left border line */}
+                  <div className="flex flex-col gap-4 pl-3 border-l border-slate-200 ml-0.5">
                   {toolCalls.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-10 text-slate-400 gap-2">
                       <Compass className={cn("h-5 w-5", isBusy ? "animate-spin text-[#005F9E]" : "text-slate-300")} />
@@ -382,7 +384,7 @@ export default function DiagnosticsConsole({
                           <div key={call.id} className="flex flex-col gap-1.5 relative animate-in fade-in slide-in-from-left-2 duration-300">
                             {/* Timeline Connector Node */}
                             <div className={cn(
-                              "absolute -left-[17px] top-1 h-3.5 w-3.5 rounded-full border-2 border-white shadow-xs flex items-center justify-center z-10",
+                              "absolute -left-[19px] top-1 h-3.5 w-3.5 rounded-full border-2 border-white shadow-xs flex items-center justify-center z-10",
                               call.state === "input-available" || call.state === "approval-requested"
                                 ? "bg-[#FF9F1C] text-white"
                                 : call.state === "output-available"
@@ -451,6 +453,7 @@ export default function DiagnosticsConsole({
                       )}
                     </>
                   )}
+                  </div>
                 </div>
               </div>
             )}
