@@ -69,12 +69,12 @@ This file is the **authoritative, living task tracker** for the project, mirrori
   - [x] Scaffold `agent/subagents/jira-agent/` sub-module files.
   - [x] Configure `search-tickets` tool to connect to real Jira Cloud REST APIs using JQL text matches.
   - [x] Configure `create-issue` tool to submit actual issues to your Jira Cloud workspace.
-- [ ] **User Story 2.2: Google Workspace API Subagent (`workspace-agent`)**
-  - [ ] Scaffold `agent/subagents/workspace-agent/` sub-module files.
-  - [ ] Install official Google APIs SDK and configure service account authentications.
-  - [ ] Implement `send-gmail` to dispatch real emails.
-  - [ ] Implement `post-gchat` to send real Google Chat webhook threads.
-  - [ ] Implement `schedule-calendar` to query and book real Google Calendar slots.
+- [x] **User Story 2.2: Google Workspace API Subagent (`workspace-agent`)**
+  - [x] Scaffold `agent/subagents/workspace-agent/` sub-module files.
+  - [x] Install official Google APIs SDK and configure service account authentications.
+  - [x] Implement `send-gmail` to dispatch real emails.
+  - [x] Implement `post-gchat` to send real Google Chat webhook threads.
+  - [x] Implement `schedule-calendar` to query and book real Google Calendar slots.
 - [x] **User Story 2.3: Live Integration Credentials & Env Vault Setup**
   - [x] Create a comprehensive `.env.local` secure template and update `.env.example` in Git.
   - [x] Build a startup validator checks script to ensure all required API, Billing, and Org keys are present and correctly formatted.

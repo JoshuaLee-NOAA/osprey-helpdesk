@@ -40,20 +40,19 @@ Our focus is:
 - **2026-08-09**: Programmed fluid CSS flex transitions enabling the Agent & Tool Activity Timeline to expand up to **100% full panel height** on toggle, hiding the tickets grid cleanly.
 - **2026-08-09**: Differentiated Left and Right sidebar header icons using distinct, semantic symbols (`History` and `ClipboardList` respectively).
 - **2026-08-09**: Fixed the Jira search filtering gap by implementing **email-aware JQL queries** in `src/lib/jira.ts` (matching `reporter`, `creator`, or `assignee`) and updating `jira-agent/instructions.md` with explicit employee ownership guidelines.
+- **2026-08-10**: Installed official `googleapis` SDK and implemented the unified **`src/lib/workspace.ts`** client supporting secure OAuth JWT impersonation for Gmail and Calendar.
+- **2026-08-10**: Designed and scaffolded the specialized **`workspace-agent`** subagent (`agent.ts`, `instructions.md`) with three expert tools: `send-gmail`, `post-gchat`, and `schedule-calendar`.
+- **2026-08-10**: Configured **Interactive Notification Preference Prompting** inside `agent/instructions.md` directing Osprey to query the user for communication channels (Email, Chat, or Both) and follow up immediately via `workspace-agent` upon task completions.
 
 ---
 
 ## Next Steps
 
-1. **Epic 2 Setup (Workspace Specialist)**:
-   - Construct the specialized directory `agent/subagents/workspace-agent/`.
-   - Implement real API connections using the official `googleapis` SDK for Google Workspace (Gmail, Calendar) and native POST requests for Google Chat webhooks.
-   - Author tools `send-gmail`, `post-gchat`, and `schedule-calendar` to query and perform live Workspace operations.
-2. **Epic 3 Setup (GCP + Terraform Core)**:
+1. **Epic 3 Setup (GCP + Terraform Core)**:
    - Construct specialized directory `agent/subagents/gcp-agent/`.
    - Author a base workstation Terraform template under `agent/subagents/gcp-agent/templates/workstation.tf`.
    - Implement real project creation calls using Google Cloud Resource Manager API, followed by spawning child shell execution scripts `terraform init && terraform apply -auto-approve` inside `/tmp`.
-3. **Epic 4 Setup (Supabase Realtime HITL Queue)**:
+2. **Epic 4 Setup (Supabase Realtime HITL Queue)**:
    - Provision `hitl_transactions` and `audit_logs` SQL schemas in Supabase and enable real-time tracking streams.
    - Attach Eve's native `needsApproval` conditional intercepts halting high-risk tool calls.
 

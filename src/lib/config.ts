@@ -68,34 +68,35 @@ export function getJiraConfig() {
  */
 export function getWorkspaceConfig() {
   const schema = z.object({
-    GOOGLE_WORKSPACE_GCHAT_WEBHOOK_URL: z.string().url("Invalid Google Chat Webhook URL"),
-    GOOGLE_SERVICE_ACCOUNT_JSON_BASE64: z.string().min(50, "Google Service Account key must be a valid base64-encoded string"),
+    GOOGLE_WORKSPACE_GCHAT_WEBHOOK_URL: z.string().url("Invalid Google Chat Webhook URL").optional(),
+    GOOGLE_SERVICE_ACCOUNT_JSON_BASE64: z.string().min(50, "Google Service Account key must be a valid base64-encoded string").optional(),
   });
 
   const result = schema.safeParse(process.env);
   if (!result.success) {
     throw new Error(
       "❌ Google Workspace Integration Error:\n" +
-      "Missing Google Workspace variables inside your .env.local.\n" +
-      "Please set GOOGLE_WORKSPACE_GCHAT_WEBHOOK_URL and GOOGLE_SERVICE_ACCOUNT_JSON_BASE64.\n" +
-      "To encode your Service Account JSON file, run: cat key.json | base64"
+      "Invalid Workspace configuration variables in .env.local."
     );
   }
 
-  // Helper to decode the Service Account JSON string securely
-  try {
-    const jsonString = Buffer.from(result.data.GOOGLE_SERVICE_ACCOUNT_JSON_BASE64, "base64").toString("utf8");
-    const credentials = JSON.parse(jsonString);
-    return {
-      gchatWebhookUrl: result.data.GOOGLE_WORKSPACE_GCHAT_WEBHOOK_URL,
-      credentials,
-    };
-  } catch (err) {
-    throw new Error(
-      "❌ Google Workspace Integration Error:\n" +
-      "Failed to decode or parse GOOGLE_SERVICE_ACCOUNT_JSON_BASE64. Ensure it is a valid base64-encoded JSON key file."
-    );
+  let credentials = null;
+  if (result.data.GOOGLE_SERVICE_ACCOUNT_JSON_BASE64) {
+    try {
+      const jsonString = Buffer.from(result.data.GOOGLE_SERVICE_ACCOUNT_JSON_BASE64, "base64").toString("utf8");
+      credentials = JSON.parse(jsonString);
+    } catch (err) {
+      throw new Error(
+        "❌ Google Workspace Integration Error:\n" +
+        "Failed to decode or parse GOOGLE_SERVICE_ACCOUNT_JSON_BASE64. Ensure it is a valid base64-encoded JSON key file."
+      );
+    }
   }
+
+  return {
+    gchatWebhookUrl: result.data.GOOGLE_WORKSPACE_GCHAT_WEBHOOK_URL,
+    credentials,
+  };
 }
 
 /**
