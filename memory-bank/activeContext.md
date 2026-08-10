@@ -20,29 +20,21 @@ Furthermore, we have expanded our frontend specifications to incorporate a **Gla
 - `src/components/ui/*` — high-density base components built on top of `@base-ui/react` primitives.
 
 **Immediate Next Work Focus:**
-We are beginning **Epic 2: Live Multi-Agent Systems** (Google Workspace subagent) and **Epic 3: Fully Automated Cloud Operations**.
+We are beginning **Epic 3: Fully Automated Cloud Operations** and **Epic 4: State-Serialized HITL Command Center**.
 Our focus is:
-1. Creating specialized subagents:
-   - `workspace-agent` — sending emails, calendar requests, and Google Chat room webhook alerts via real Google REST endpoints using `googleapis`.
-   - `gcp-agent` — creating real GCP projects and executing local **Terraform child processes** (`child_process.exec`) to provision secure Compute science workstations.
-2. Connecting these specialized subagent actions into the supervisor agent's instructions, ensuring the conversational core smoothly forwards requests to these sub-specialists and renders rich UI preview cards upon completions.
+1. Creating specialized `gcp-agent` subagent:
+   - Author standard Terraform configurations inside `gcp-agent` templates.
+   - Implement real project creation and workspace VM provision commands.
+2. Building the Supabase-backed HITL (Human-in-the-loop) queue to intercept high-risk operations and provide a real-time admin queue.
 
 ---
 
 ## Recent Changes
 
-- **2026-08-08**: Secured ChatInterface's WebSocket connection headers using Clerk's `useAuth` active session JWT token, completing Epic 1.
-- **2026-08-08**: Scaffolded the specialized **`jira-agent`** subagent (`agent.ts`, `instructions.md`) and authored standard subagent tools `search-tickets` and `create-issue`.
-- **2026-08-08**: Authored a robust `src/lib/jira.ts` client supporting offline local development via `API_MODE=MOCK` and live, authenticated Atlassian API calls using v3 Atlassian Document Format payloads.
-- **2026-08-08**: Expanded Epic 1 UX scope to incorporate the **Double-Sidebar Portal Layout**, adding User Story 1.4 (Left Sidebar Ticket & History Drawer) and User Story 1.5 (Right Sidebar AI Diagnostics Console).
-- **2026-08-08**: Swapped the temporary guest WiFi passcode tool with a highly advanced, fully automated **GCP Project and Terraform Science Workstation Provisioning tool**, introducing a specialized **`gcp-agent`** subagent.
-- **2026-08-09**: Designed and implemented the high-fidelity **Agent & Tool Activity Timeline** in `DiagnosticsConsole.tsx` replacing the text-only monologue.
-- **2026-08-09**: Programmed fluid CSS flex transitions enabling the Agent & Tool Activity Timeline to expand up to **100% full panel height** on toggle, hiding the tickets grid cleanly.
-- **2026-08-09**: Differentiated Left and Right sidebar header icons using distinct, semantic symbols (`History` and `ClipboardList` respectively).
-- **2026-08-09**: Fixed the Jira search filtering gap by implementing **email-aware JQL queries** in `src/lib/jira.ts` (matching `reporter`, `creator`, or `assignee`) and updating `jira-agent/instructions.md` with explicit employee ownership guidelines.
-- **2026-08-10**: Installed official `googleapis` SDK and implemented the unified **`src/lib/workspace.ts`** client supporting secure OAuth JWT impersonation for Gmail and Calendar.
-- **2026-08-10**: Designed and scaffolded the specialized **`workspace-agent`** subagent (`agent.ts`, `instructions.md`) with three expert tools: `send-gmail`, `post-gchat`, and `schedule-calendar`.
-- **2026-08-10**: Configured **Interactive Notification Preference Prompting** inside `agent/instructions.md` directing Osprey to query the user for communication channels (Email, Chat, or Both) and follow up immediately via `workspace-agent` upon task completions.
+- **2026-08-10**: Designed and implemented the unified **`src/lib/workspace.ts`** client and specialized **`workspace-agent`** subagent with three expert tools: `send-gmail`, `post-gchat`, and `schedule-calendar`.
+- **2026-08-10**: Configured **Interactive Notification Preference Prompting** inside `agent/instructions.md` directing Osprey to query the user for communication channels (Email, Chat, or Both) and follow up immediately.
+- **2026-08-10**: Resolved the Jira subagent hanging bug (Epic 6) by implementing robust Atlassian ADF empty-text fallback protections and 10-second `AbortController` fetch timeouts inside `src/lib/jira.ts`.
+- **2026-08-10**: Authored a consolidated integration pre-flight test runner at `scripts/diagnose.ts` and clean-up 6 obsolete scratch files under `/scratch` and `/scripts` to eliminate code clutter.
 
 ---
 
@@ -64,8 +56,13 @@ Our focus is:
 - **Organization-Level Service Account permissions**: The Google service account mapped in `.env.local` must possess Org-level IAM roles (Project Creator, Billing User) in order to programmatically set up projects and link billing nodes.
 - **Cost Minimization**: All workstation VM configurations inside our Terraform templates will default strictly to minimal, cost-friendly node templates (such as `f1-micro` or `e2-micro`) to safeguard your personal GCP billing account from heavy development/testing charges.
 
+### Identified Technical Debt & Hardening Opportunities:
+1. **Google REST/Webhook Timeout Safety**: While we integrated 10s fetch timeouts on Jira REST operations, the Google Workspace integration (such as Google Chat webhooks) currently lacks custom fetch timeout bounds. This should be hardened.
+2. **Support Metadata Enums**: Support ticket category maps and severity tags are currently handled as plain strings across components. Migrating to shared enums will improve TypeScript validation robustness.
+
 ---
 
 ## Open Questions
 
 - *Are there specific billing account IDs or parent organization IDs on your personal GCP console that we should note for our upcoming `.env.example` blueprint configuration?* (We will provide instructions for adding these variables during credentials setup).
+

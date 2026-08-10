@@ -34,11 +34,11 @@ This file is the **authoritative, living task tracker** for the project, mirrori
 ### Epic 1: Portal & Conversational Core (Conversational UX)
 *Goal: Provide a responsive, beautiful, single-column chat interface that establishes robust streaming connections to Vercel's Eve runtime, complemented by a collapsible left-side operational hub and right-side diagnostics panel.*
 
-- [/] **User Story 1.1: Clerk-Authenticated Eve Conversation Stream**
+- [x] **User Story 1.1: Clerk-Authenticated Eve Conversation Stream**
   - [x] Configure Clerk SDK, wrapping the app layout in `<ClerkProvider>`.
   - [x] Author same-origin route protections inside `agent/channels/eve.ts` utilizing `localDev` and `vercelOidc`.
   - [x] Fix Clerk middleware runtime protect call (`await auth.protect()`).
-  - [ ] Connect the dynamic Clerk JWT session token inside `ChatInterface.tsx` to secure client-to-agent socket headers.
+  - [x] Connect the dynamic Clerk JWT session token inside `ChatInterface.tsx` to secure client-to-agent socket headers.
 - [x] **User Story 1.2: Bounded Floating Card with Seamless Scroll-Lock**
   - [x] Configure Google Font `Lato` as the primary typography.
   - [x] Setup `shadcn/ui` variables with the project palette (NOAA Dark Blue, Process Light Blue, and Osprey Amber).
@@ -46,9 +46,9 @@ This file is the **authoritative, living task tracker** for the project, mirrori
   - [x] Remove the flashing "Osprey is thinking" loading bar and replace it with a seamless thinking bubble to prevent layout shifts.
   - [x] Filter out invisible setup messages via `hasVisibleContent` so the Osprey bot mascot avatar renders in perfect lockstep with the first streamed text token.
   - [x] Integrate a `ResizeObserver` auto-scrolling system with fast scrolling on active streams and smooth scrolling on finishers.
-- [ ] **User Story 1.3: Rich Inline Message Preview Cards**
-  - [ ] Build high-fidelity inline components inside `/portal` (e.g., `JiraTicketCard`, `GmailDraftCard`, `GcpWorkstationCard`).
-  - [ ] Intercept finished tool payloads and map them to their corresponding card templates.
+- [x] **User Story 1.3: Rich Inline Message Preview Cards**
+  - [x] Build high-fidelity inline components inside `/portal` (e.g., `JiraTicketCard`, `GmailDraftCard`, `GcpWorkstationCard`).
+  - [x] Intercept finished tool payloads and map them to their corresponding card templates.
 - [x] **User Story 1.4: Left Sidebar Ticket & History Drawer**
   - [x] Build a collapsible left-side drawer styled with rounded margins.
   - [x] Relocate "New Chat" trigger and wire session clearing hooks.
@@ -120,10 +120,10 @@ This file is the **authoritative, living task tracker** for the project, mirrori
 
 ## Current Status
 
-- **Active Epic**: Epic 2: Live Multi-Agent Systems & Credential Vault. The Jira specialist subagent (`jira-agent`) is 100% complete and fully verified with live JQL queries and ownership guidelines.
-- **Ready for Next Step**: Implement the specialized Google Workspace subagent (`workspace-agent`) to support automated Gmail dispatches, Google Chat webhooks, and Calendar bookings (Epic 2.2).
-- **In progress**: Epic 2 (Jira core integrated, Workspace starting).
-- **Not started**: Epics 3 and 4 (GCP provisioning infrastructure and Supabase-backed HITL approval queues).
+- **Active Epic**: Epic 3: Fully Automated Cloud & Self-Service Operations (GCP & Terraform).
+- **Ready for Next Step**: Construct standardized Terraform VPC configurations and implement workspace VM creation scripts under `gcp-agent` (Epic 3.2).
+- **In progress**: Epics 3 and 4 (GCP cloud orchestration and Supabase-backed HITL approval queues).
+- **Completed**: Epic 1 (Conversational Core & UI Console) and Epic 2 (Specialized Subagents & Credentials Framework) are 100% complete and verified live.
 
 ## Known Issues
 
@@ -142,3 +142,6 @@ This file is the **authoritative, living task tracker** for the project, mirrori
 - **2026-08-09**: Replaced text monologue with high-fidelity, color-coded **Agent & Tool Activity Timeline** capturing dynamic tool statuses (`Running`, `Completed`, `Failed`, `Approval Required`, etc.).
 - **2026-08-09**: Added responsive CSS class triggers enabling the Activity Timeline drawer to expand up to **100% panel height** on demand, collapsing the tickets panel to 0px dynamically.
 - **2026-08-09**: Upgraded Jira ticket searching to be fully **email-aware**, resolving a core gap where helpdesk tickets (unassigned by default) could not be retrieved by the agent's assignee JQL filters. Added formal employee ownership instructions in `instructions.md`.
+- **2026-08-10**: Designed and implemented the unified `src/lib/workspace.ts` client supporting OAuth impersonation via JWT and registered the expert **`workspace-agent`** subagent with automated tools for Gmail dispatching, GChat webhooks, and Calendar support scheduling.
+- **2026-08-10**: Resolved the Jira Agent hanging issue (Epic 6) by implementing robust Atlassian ADF empty-text fallback handlers and integrating a secure 10-second `fetchWithTimeout` wrapper using `AbortController` in `src/lib/jira.ts`.
+- **2026-08-10**: Consolidated 6 loose test and scratch scripts scattered across the codebase into a single, comprehensive diagnostics utility at `scripts/diagnose.ts` triggered easily via `npm run diagnose` and cleaned up all redundant test clutter from `/scratch`.
