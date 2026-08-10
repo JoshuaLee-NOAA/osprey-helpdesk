@@ -21,6 +21,29 @@ function getBasicAuthHeader(email: string, token: string): string {
 }
 
 /**
+ * Executes a fetch request with a strict timeout using AbortController.
+ */
+async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs = 10000): Promise<Response> {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    return response;
+  } catch (err: any) {
+    if (err.name === "AbortError" || err.message?.includes("aborted")) {
+      throw new Error(`Jira API request timed out after ${timeoutMs}ms.`);
+    }
+    throw err;
+  } finally {
+    clearTimeout(id);
+  }
+}
+
+/**
  * Search Jira issues. Fallback to offline mock database if API_MODE=MOCK or credentials absent.
  */
 export async function searchJiraIssues(queryText: string): Promise<JiraIssue[]> {
@@ -66,7 +89,7 @@ export async function searchJiraIssues(queryText: string): Promise<JiraIssue[]> 
   const url = `${config.JIRA_HOST}/rest/api/3/search/jql?jql=${encodeURIComponent(jql)}&fields=summary,status,labels`;
 
   try {
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
       method: "GET",
       headers: {
         Authorization: authHeader,
@@ -135,6 +158,9 @@ export async function createJiraIssue(
   const authHeader = getBasicAuthHeader(config.JIRA_USER_EMAIL, config.JIRA_API_TOKEN);
   const url = `${config.JIRA_HOST}/rest/api/3/issue`;
 
+  // Safely ensure description is never empty (Atlassian ADF empty text node constraint)
+  const safeDescription = (description || "").trim() || "No description provided.";
+
   // Jira Cloud V3 requires Atlassian Document Format (ADF) for descriptions
   const bodyPayload = {
     fields: {
@@ -151,7 +177,7 @@ export async function createJiraIssue(
             content: [
               {
                 type: "text",
-                text: description,
+                text: safeDescription,
               },
             ],
           },
@@ -164,7 +190,7 @@ export async function createJiraIssue(
     },
   };
 
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     method: "POST",
     headers: {
       Authorization: authHeader,
@@ -223,7 +249,7 @@ export async function updateJiraIssue(
     // In Jira, status is changed by posting to /transitions endpoint.
     // First, we fetch available transitions to find the ID matching our target status
     const transUrl = `${config.JIRA_HOST}/rest/api/3/issue/${key}/transitions`;
-    const transRes = await fetch(transUrl, {
+    const transRes = await fetchWithTimeout(transUrl, {
       method: "GET",
       headers: { Authorization: authHeader, Accept: "application/json" },
     });
@@ -236,7 +262,7 @@ export async function updateJiraIssue(
       );
 
       if (matchingTrans) {
-        await fetch(transUrl, {
+        await fetchWithTimeout(transUrl, {
           method: "POST",
           headers: {
             Authorization: authHeader,
@@ -258,7 +284,7 @@ export async function updateJiraIssue(
     if (category) labels.push(category.toLowerCase());
     if (severity) labels.push(severity.toLowerCase());
 
-    await fetch(editUrl, {
+    await fetchWithTimeout(editUrl, {
       method: "PUT",
       headers: {
         Authorization: authHeader,
@@ -273,7 +299,7 @@ export async function updateJiraIssue(
 
   // Fetch and return the updated issue state
   const issueUrl = `${config.JIRA_HOST}/rest/api/3/issue/${key}`;
-  const res = await fetch(issueUrl, {
+  const res = await fetchWithTimeout(issueUrl, {
     method: "GET",
     headers: { Authorization: authHeader, Accept: "application/json" },
   });
@@ -324,7 +350,7 @@ export async function addJiraComment(key: string, bodyText: string): Promise<boo
     },
   };
 
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     method: "POST",
     headers: {
       Authorization: authHeader,
