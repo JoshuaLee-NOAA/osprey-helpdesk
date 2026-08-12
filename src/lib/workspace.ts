@@ -1,5 +1,6 @@
 import { google } from "googleapis";
 import { getWorkspaceConfig } from "./config";
+import { buildBrandedEmailHtml } from "./email-template";
 
 /**
  * Resolves the active staging/production email address to impersonate.
@@ -7,9 +8,10 @@ import { getWorkspaceConfig } from "./config";
  * it redirects to our authorized 'joshua@readymove.ai' staging address to allow domain-wide delegation to succeed.
  */
 export function resolveActiveEmail(userEmail: string): string {
+  const stagingUser = process.env.WORKSPACE_STAGING_USER || "joshua@readymove.ai";
   if (userEmail.endsWith("@noaa.gov") || !userEmail.includes("@readymove.ai")) {
-    console.log(`🔧 [Workspace API Redirect] Mapping user email "${userEmail}" -> "joshua@readymove.ai"`);
-    return "joshua@readymove.ai";
+    console.log(`🔧 [Workspace API Redirect] Mapping user email "${userEmail}" -> "${stagingUser}"`);
+    return stagingUser;
   }
   return userEmail;
 }
@@ -54,18 +56,29 @@ export async function sendGmail(
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   const isMockMode = process.env.API_MODE === "MOCK";
 
+  // Ensure every outgoing email is wrapped in Osprey's branded HTML email template
+  const finalHtml = htmlContent.trim().startsWith("<!DOCTYPE html>")
+    ? htmlContent
+    : buildBrandedEmailHtml({
+        title: subject,
+        badgeText: "OSPREY IT NOTIFICATION",
+        badgeType: "info",
+        contentHtml: htmlContent,
+      });
+
   if (isMockMode) {
     console.log(`[Workspace API] (MOCK) Gmail sent successfully:`);
     console.log(`  From:    ${userEmail}`);
     console.log(`  To:      ${to}`);
     console.log(`  Subject: ${subject}`);
-    console.log(`  Body:    ${htmlContent}`);
+    console.log(`  Body:    ${finalHtml}`);
     return { success: true, messageId: `mock-msg-${Date.now()}` };
   }
 
   try {
     const activeEmail = resolveActiveEmail(userEmail);
-    const activeRecipient = resolveActiveEmail(to);
+    const activeRecipient = to; // Deliver directly to the requested recipient email
+    console.log(`📧 [Gmail Client] Sending email | From (Sender): "${activeEmail}" | To (Recipient): "${activeRecipient}"`);
     const auth = getGoogleAuthClient(activeEmail);
     const gmail = google.gmail({ version: "v1", auth });
 
@@ -77,7 +90,7 @@ export async function sendGmail(
       "MIME-Version: 1.0",
       `Subject: ${subject}`,
       "",
-      htmlContent,
+      finalHtml,
     ];
 
     const emailRaw = emailLines.join("\r\n");

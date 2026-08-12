@@ -406,7 +406,7 @@ function ChatInterfaceContent({
                       {[
                         { icon: Shield, title: "MFA Token Reset", subtitle: "Recover authentication access", prompt: "I need to reset my MFA token. I am locked out.", iconColor: "text-amber-600 bg-amber-50 border-amber-100" },
                         { icon: Laptop, title: "Software License", subtitle: "Request a seat or utility key", prompt: "I need to request a Figma seat license for staging.", iconColor: "text-blue-600 bg-blue-50 border-blue-100" },
-                        { icon: Cpu, title: "Developer Provisioning", subtitle: "Scaffold DevOps sandboxes", prompt: "I need to deploy a GCP Science Workstation.", iconColor: "text-emerald-600 bg-emerald-50 border-emerald-100" },
+                        { icon: Cpu, title: "Calendar Booking", subtitle: "Schedule IT onboarding & support slots", prompt: "I need to schedule a 1-hour IT onboarding meeting on my calendar.", iconColor: "text-emerald-600 bg-emerald-50 border-emerald-100" },
                         { icon: Network, title: "Access & Network", subtitle: "Alter team or network access", prompt: "I need access to configuring my team's Slack channel.", iconColor: "text-purple-600 bg-purple-50 border-purple-100" },
                       ].map((action) => (
                         <button

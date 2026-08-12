@@ -1,8 +1,7 @@
 "use client";
 
-import { useRef, useEffect, useState } from "react";
+import { useState } from "react";
 import { 
-  Terminal, 
   PanelRightClose, 
   ChevronDown, 
   ChevronUp, 
@@ -64,21 +63,7 @@ export default function DiagnosticsConsole({
   activeTickets = [],
   resolvedTickets = []
 }: DiagnosticsConsoleProps) {
-  const terminalEndRef = useRef<HTMLDivElement>(null);
   const [isConsoleExpanded, setIsConsoleExpanded] = useState(false);
-  const [activeTab, setActiveTab] = useState<"timeline" | "diagnostics">("timeline");
-
-  // Extract streaming reasoning parts
-
-  // Extract streaming reasoning parts
-  const reasoningLogs: string[] = [];
-  messages.forEach((msg) => {
-    msg.parts.forEach((part) => {
-      if (part.type === "reasoning" && part.text.trim()) {
-        reasoningLogs.push(part.text);
-      }
-    });
-  });
 
   // Scan for active running tools or subagents
   let activeToolName = "";
@@ -134,13 +119,6 @@ export default function DiagnosticsConsole({
     id,
     ...info
   }));
-
-  // Auto-scroll the reasoning logs terminal to the bottom as reasoning streams in
-  useEffect(() => {
-    if (isConsoleExpanded && isOpen) {
-      terminalEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [reasoningLogs.length, isConsoleExpanded, isOpen]);
 
   if (!isOpen) return null;
 
@@ -264,236 +242,180 @@ export default function DiagnosticsConsole({
 
       {/* Collapsible Tool & Agent Activity Timeline Drawer at Bottom */}
       <div className={cn(
-        "border-t border-border bg-slate-50/95 backdrop-blur-xs flex flex-col transition-all duration-300",
-        isConsoleExpanded ? "flex-1 min-h-0" : "shrink-0"
+        "border-t border-slate-800 flex flex-col transition-all duration-300",
+        isConsoleExpanded ? "flex-1 min-h-0 bg-slate-50" : "shrink-0"
       )}>
-        {/* Toggle bar */}
+        {/* Dark Header Toggle Bar */}
         <button 
           onClick={() => setIsConsoleExpanded(!isConsoleExpanded)}
-          className="w-full p-4 flex items-center justify-between text-left hover:bg-slate-100 transition-colors"
+          className="w-full p-3.5 flex items-center justify-between text-left bg-gradient-to-r from-slate-900 via-slate-900 to-[#003087]/90 hover:from-slate-800 hover:to-[#003087] transition-all duration-200 shadow-xs"
         >
-          <span className="text-xs font-mono font-black text-[#005F9E] tracking-wider flex items-center gap-1.5 uppercase">
-            <Workflow className="h-4 w-4 text-[#005F9E] animate-pulse" />
+          <span className="text-xs font-mono font-black text-cyan-400 tracking-wider flex items-center gap-2 uppercase">
+            <Workflow className="h-4 w-4 text-[#FF9F1C] animate-pulse" />
             Agent & Tool Activity
           </span>
           {isConsoleExpanded ? (
-            <ChevronDown className="h-4 w-4 text-slate-500" />
+            <ChevronDown className="h-4 w-4 text-slate-400" />
           ) : (
-            <ChevronUp className="h-4 w-4 text-slate-500" />
+            <ChevronUp className="h-4 w-4 text-slate-400" />
           )}
         </button>
 
-        {/* Collapsible Content */}
+        {/* Light Mode Collapsible Content */}
         {isConsoleExpanded && (
-          <div className="px-5 pb-5 flex flex-col gap-4 animate-in slide-in-from-bottom duration-300 flex-1 overflow-y-auto border-t border-border/40 pt-3.5 min-h-0">
-            
-            {/* Tabs Bar */}
-            <div className="flex border-b border-border/40 shrink-0 select-none mb-1 gap-4">
-              <button
-                onClick={() => setActiveTab("timeline")}
-                className={cn(
-                  "pb-2 text-xs font-mono font-bold border-b-2 transition-all px-1 flex items-center gap-1.5",
-                  activeTab === "timeline" 
-                    ? "border-[#005F9E] text-[#005F9E]" 
-                    : "border-transparent text-slate-400 hover:text-slate-600"
-                )}
-              >
-                <Workflow className="h-3.5 w-3.5" />
-                Timeline
-              </button>
-              <button
-                onClick={() => setActiveTab("diagnostics")}
-                className={cn(
-                  "pb-2 text-xs font-mono font-bold border-b-2 transition-all px-1 flex items-center gap-1.5",
-                  activeTab === "diagnostics" 
-                    ? "border-[#005F9E] text-[#005F9E]" 
-                    : "border-transparent text-slate-400 hover:text-slate-600"
-                )}
-              >
-                <Terminal className="h-3.5 w-3.5" />
-                Thought Terminal
-                {isBusy && <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping" />}
-              </button>
-            </div>
+          <div className="px-4 pb-4 flex flex-col gap-3.5 animate-in slide-in-from-bottom duration-300 flex-1 overflow-y-auto border-t border-slate-200 pt-3 min-h-0 bg-slate-50 text-slate-800">
+            <div className="flex flex-col gap-3 flex-1 min-h-0">
+              {/* Minimalist Sub-Header */}
+              <p className="text-[10px] text-slate-500 font-medium font-mono select-none">
+                Live stream of subagent invocations & system tools:
+              </p>
 
-            {/* Tab 1: Activity Timeline */}
-            {activeTab === "timeline" && (
-              <div className="flex flex-col gap-4 flex-1 min-h-0">
-                {/* Minimalist Sub-Header */}
-                <p className="text-[10px] text-muted-foreground font-medium italic select-none">
-                  Chronological log of specialized subagent handoffs and executed backend integrations.
-                </p>
+              {/* Scrollable Container with horizontal padding */}
+              <div className="flex-1 overflow-y-auto pr-1 pl-4 pb-2">
+                {/* Timeline component with left border line */}
+                <div className="flex flex-col gap-3.5 pl-3 border-l border-slate-200 ml-0.5">
+                {toolCalls.length === 0 && !isBusy ? (
+                  <div className="flex flex-col items-center justify-center py-10 text-slate-400 gap-2">
+                    <Compass className="h-5 w-5 text-slate-300" />
+                    <p className="text-xs font-mono font-medium italic text-slate-400">
+                      No active calls. Tools will display here as they run!
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    {toolCalls.map((call) => {
+                      const isSubagent = call.isSubagent;
 
-                {/* Scrollable Container with horizontal padding to prevent absolute clipping */}
-                <div className="flex-1 overflow-y-auto pr-1 pl-4 pb-2">
-                  {/* Timeline component with left border line */}
-                  <div className="flex flex-col gap-4 pl-3 border-l border-slate-200 ml-0.5">
-                  {toolCalls.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-10 text-slate-400 gap-2">
-                      <Compass className={cn("h-5 w-5", isBusy ? "animate-spin text-[#005F9E]" : "text-slate-300")} />
-                      <p className="text-xs font-medium italic">
-                        {isBusy ? "Initiating systems..." : "No active calls. Tools will display here as they run!"}
-                      </p>
-                    </div>
-                  ) : (
-                    <>
-                      {toolCalls.map((call, index) => {
-                        const isSubagent = call.isSubagent;
+                      // Extract nice meta descriptions from input and output
+                      const metaRows: { label: string; value: string }[] = [];
+                      const inputObj = call.input as Record<string, any> || {};
+                      const outputObj = call.output as Record<string, any> || {};
 
-                        // Extract nice meta descriptions from input and output
-                        const metaRows: { label: string; value: string }[] = [];
-                        const inputObj = call.input as Record<string, any> || {};
-                        const outputObj = call.output as Record<string, any> || {};
+                      if (inputObj.summary) {
+                        metaRows.push({ label: "Summary", value: inputObj.summary });
+                      }
+                      if (inputObj.query || inputObj.jql) {
+                        metaRows.push({ label: "Query", value: inputObj.query || inputObj.jql });
+                      }
+                      if (inputObj.prompt || inputObj.task) {
+                        metaRows.push({ label: "Task", value: inputObj.prompt || inputObj.task });
+                      }
+                      if (inputObj.assignee) {
+                        metaRows.push({ label: "Assignee", value: inputObj.assignee });
+                      }
 
-                        // Extract input fields
-                        if (inputObj.summary) {
-                          metaRows.push({ label: "Summary", value: inputObj.summary });
-                        }
-                        if (inputObj.query || inputObj.jql) {
-                          metaRows.push({ label: "Query", value: inputObj.query || inputObj.jql });
-                        }
-                        if (inputObj.prompt || inputObj.task) {
-                          metaRows.push({ label: "Task", value: inputObj.prompt || inputObj.task });
-                        }
-                        if (inputObj.assignee) {
-                          metaRows.push({ label: "Assignee", value: inputObj.assignee });
-                        }
+                      if (outputObj.key || outputObj.id) {
+                        metaRows.push({ label: "Key", value: outputObj.key || outputObj.id });
+                      }
+                      if (outputObj.status) {
+                        metaRows.push({ label: "Status", value: outputObj.status });
+                      }
 
-                        // Extract output fields (e.g. Jira key or success message)
-                        if (outputObj.key || outputObj.id) {
-                          metaRows.push({ label: "Key", value: outputObj.key || outputObj.id });
-                        }
-                        if (outputObj.status) {
-                          metaRows.push({ label: "Status", value: outputObj.status });
-                        }
+                      // Tool state metadata mapping (Light mode crisp palette)
+                      const stateMetaMap: Record<string, { label: string; className: string; bg: string }> = {
+                        "input-streaming": { label: "Pending", className: "text-slate-400", bg: "bg-slate-100 border-slate-200" },
+                        "input-available": { label: "Running", className: "text-amber-800", bg: "bg-amber-50 border-amber-200 animate-pulse" },
+                        "approval-requested": { label: "Approval Required", className: "text-amber-800", bg: "bg-amber-50 border-amber-200 animate-pulse" },
+                        "approval-responded": { label: "Responded", className: "text-slate-600", bg: "bg-slate-100 border-slate-200" },
+                        "output-available": { label: "Completed", className: "text-emerald-800 font-bold", bg: "bg-emerald-50 border-emerald-200" },
+                        "output-error": { label: "Failed", className: "text-red-800", bg: "bg-red-50 border-red-200" },
+                        "output-denied": { label: "Denied", className: "text-orange-800", bg: "bg-orange-50 border-orange-200" },
+                      };
 
-                        // Tool state metadata mapping
-                        const stateMetaMap: Record<string, { label: string; className: string; bg: string }> = {
-                          "input-streaming": { label: "Pending", className: "text-slate-400", bg: "bg-slate-100 border-slate-200" },
-                          "input-available": { label: "Running", className: "text-blue-600", bg: "bg-blue-50 border-blue-100 animate-pulse" },
-                          "approval-requested": { label: "Approval Required", className: "text-amber-600", bg: "bg-amber-50 border-amber-100 animate-pulse" },
-                          "approval-responded": { label: "Responded", className: "text-slate-500", bg: "bg-slate-100 border-slate-200" },
-                          "output-available": { label: "Completed", className: "text-emerald-600", bg: "bg-emerald-50 border-emerald-100" },
-                          "output-error": { label: "Failed", className: "text-red-600", bg: "bg-red-50 border-red-100" },
-                          "output-denied": { label: "Denied", className: "text-orange-600", bg: "bg-orange-50 border-orange-100" },
-                        };
+                      const stateMeta = stateMetaMap[call.state] || { label: call.state, className: "text-slate-500", bg: "bg-slate-100 border-slate-200" };
 
-                        const stateMeta = stateMetaMap[call.state] || { label: call.state, className: "text-slate-500", bg: "bg-slate-100 border-slate-200" };
+                      return (
+                        <div key={call.id} className="flex flex-col gap-1.5 relative animate-in fade-in slide-in-from-left-2 duration-300">
+                          {/* Timeline Connector Node */}
+                          <div className={cn(
+                            "absolute -left-[19px] top-1 h-3.5 w-3.5 rounded-full border-2 border-white shadow-xs flex items-center justify-center z-10",
+                            call.state === "input-available" || call.state === "approval-requested"
+                              ? "bg-[#FF9F1C] text-slate-950"
+                              : call.state === "output-available"
+                                ? "bg-emerald-500 text-white"
+                                : call.state === "output-error" || call.state === "output-denied"
+                                  ? "bg-red-500 text-white"
+                                  : "bg-[#005F9E] text-white"
+                          )}>
+                            {isSubagent ? (
+                              <Cpu className="h-1.5 w-1.5" />
+                            ) : (
+                              <Wrench className="h-1.5 w-1.5" />
+                            )}
+                          </div>
 
-                        return (
-                          <div key={call.id} className="flex flex-col gap-1.5 relative animate-in fade-in slide-in-from-left-2 duration-300">
-                            {/* Timeline Connector Node */}
-                            <div className={cn(
-                              "absolute -left-[19px] top-1 h-3.5 w-3.5 rounded-full border-2 border-white shadow-xs flex items-center justify-center z-10",
-                              call.state === "input-available" || call.state === "approval-requested"
-                                ? "bg-[#FF9F1C] text-white"
-                                : call.state === "output-available"
-                                  ? "bg-emerald-500 text-white"
-                                  : call.state === "output-error" || call.state === "output-denied"
-                                    ? "bg-red-500 text-white"
-                                    : "bg-[#005F9E] text-white"
-                            )}>
-                              {isSubagent ? (
-                                <Cpu className="h-1.5 w-1.5" />
-                              ) : (
-                                <Wrench className="h-1.5 w-1.5" />
-                              )}
-                            </div>
-
-                            {/* Content Card */}
-                            <div className="bg-white border border-slate-150 rounded-xl p-3 shadow-xs flex flex-col gap-2">
-                              {/* Card Header */}
-                              <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-1.5">
-                                <div className="flex flex-col min-w-0">
-                                  <span className="text-[10px] font-mono font-extrabold uppercase text-[#005F9E] leading-none tracking-wider">
-                                    {isSubagent ? "Subagent Call" : "System Tool"}
-                                  </span>
-                                  <span className="text-xs font-extrabold text-slate-800 truncate mt-0.5">
-                                    {call.displayName}
-                                  </span>
-                                </div>
-                                <span className={cn("text-[9px] font-black uppercase px-2 py-0.5 rounded-full border tracking-wide", stateMeta.className, stateMeta.bg)}>
-                                  {stateMeta.label}
+                          {/* Content Card (Light Mode) */}
+                          <div className="bg-white border border-slate-200/80 rounded-xl p-3 shadow-xs flex flex-col gap-2">
+                            {/* Card Header */}
+                            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-1.5">
+                              <div className="flex flex-col min-w-0">
+                                <span className={cn("text-[10px] font-mono font-black uppercase leading-none tracking-wider", isSubagent ? "text-[#005F9E]" : "text-indigo-600")}>
+                                  {isSubagent ? "Subagent Call" : "System Tool"}
+                                </span>
+                                <span className="text-xs font-extrabold text-slate-900 truncate mt-0.5">
+                                  {call.displayName}
                                 </span>
                               </div>
-
-                              {/* Meta Key-Value Grid */}
-                              {metaRows.length > 0 ? (
-                                <div className="grid grid-cols-1 gap-1">
-                                  {metaRows.map((row, idx) => (
-                                    <div key={idx} className="flex items-start gap-1 text-[10px] leading-relaxed">
-                                      <span className="font-mono font-black text-slate-400 uppercase w-14 shrink-0">{row.label}:</span>
-                                      <span className="text-slate-600 font-semibold truncate flex-1">{row.value}</span>
-                                    </div>
-                                  ))}
-                                </div>
-                              ) : (
-                                <p className="text-[10px] text-slate-400 font-medium italic">
-                                  Invoking pipeline parameters...
-                                </p>
-                              )}
-
-                              {/* Error block if failed */}
-                              {(call.state === "output-error" && call.errorText) && (
-                                <div className="text-[9px] bg-red-50 text-red-700 border border-red-100 rounded-lg p-2 font-mono break-all select-all">
-                                  {call.errorText}
-                                </div>
-                              )}
+                              <span className={cn("text-[9px] font-mono font-extrabold uppercase px-2 py-0.5 rounded-full border tracking-wide shrink-0", stateMeta.className, stateMeta.bg)}>
+                                {stateMeta.label}
+                              </span>
                             </div>
+
+                            {/* Meta Key-Value Grid */}
+                            {metaRows.length > 0 ? (
+                              <div className="grid grid-cols-1 gap-1">
+                                {metaRows.map((row, idx) => (
+                                  <div key={idx} className="flex items-start gap-1 text-[10px] leading-relaxed">
+                                    <span className="font-mono font-bold text-slate-400 uppercase w-14 shrink-0">{row.label}:</span>
+                                    <span className="text-slate-700 font-semibold truncate flex-1">{row.value}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-[10px] text-slate-400 font-mono italic">
+                                Executing tool parameters...
+                              </p>
+                            )}
+
+                            {/* Error block if failed */}
+                            {(call.state === "output-error" && call.errorText) && (
+                              <div className="text-[9px] bg-red-50 text-red-700 border border-red-200 rounded-lg p-2 font-mono break-all select-all">
+                                {call.errorText}
+                              </div>
+                            )}
                           </div>
-                        );
-                      })}
-                      {isBusy && (
-                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-[#FF9F1C] pl-1 py-1">
-                          <span className="h-1.5 w-1.5 bg-[#FF9F1C] rounded-full animate-bounce" />
-                          <span className="h-1.5 w-1.5 bg-[#FF9F1C] rounded-full animate-bounce [animation-delay:0.2s]" />
-                          <span className="h-1.5 w-1.5 bg-[#FF9F1C] rounded-full animate-bounce [animation-delay:0.4s]" />
-                          Running subagent processes...
                         </div>
-                      )}
-                    </>
-                  )}
-                  </div>
+                      );
+                    })}
+                    {isBusy && (
+                      <div className="flex flex-col gap-1.5 relative animate-in fade-in slide-in-from-left-2 duration-300">
+                        {/* Timeline Connector Node */}
+                        <div className="absolute -left-[19px] top-1 h-3.5 w-3.5 rounded-full border-2 border-white shadow-xs bg-[#FF9F1C] text-slate-950 flex items-center justify-center z-10 animate-pulse">
+                          <Compass className="h-2 w-2 animate-spin" />
+                        </div>
+
+                        {/* Content Card */}
+                        <div className="bg-amber-50/90 border border-amber-200/80 rounded-xl p-3 shadow-xs flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <span className="relative flex h-2 w-2">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FF9F1C] opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#FF9F1C]"></span>
+                            </span>
+                            <span className="text-xs font-mono font-extrabold text-amber-900 uppercase tracking-wider">
+                              Active Conversation Process
+                            </span>
+                          </div>
+                          <span className="text-[10px] font-mono font-bold text-amber-700 bg-amber-100/80 px-2 py-0.5 rounded-full border border-amber-200 uppercase shrink-0">
+                            Executing...
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
                 </div>
               </div>
-            )}
-
-            {/* Tab 2: Retro Green Diagnostics Terminal */}
-            {activeTab === "diagnostics" && (
-              <div className="flex flex-col gap-3.5 flex-1 min-h-0">
-                <p className="text-[10px] text-muted-foreground font-medium italic select-none">
-                  Real-time terminal streaming the agent's actual thoughts, reasoning steps, and background execution traces.
-                </p>
-                <div className="flex-1 bg-slate-950 text-emerald-400 font-mono text-[10.5px] p-4 rounded-xl border border-slate-800 shadow-inner overflow-y-auto leading-relaxed flex flex-col gap-2 min-h-[180px] max-h-[450px]">
-                  {reasoningLogs.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-full text-slate-500 gap-2 select-none py-10">
-                      <Terminal className={cn("h-5 w-5", isBusy ? "animate-pulse text-emerald-500" : "text-slate-700")} />
-                      <p className="text-xs italic text-center">
-                        {isBusy ? "Establishing secure log bridge..." : "Diagnostics idle. Start a chat to stream logs!"}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col gap-2">
-                      {reasoningLogs.map((log, idx) => (
-                        <div key={idx} className="flex items-start gap-1.5 break-words whitespace-pre-wrap select-all">
-                          <span className="text-[#005F9E] select-none shrink-0 font-bold">&gt;</span>
-                          <span className="text-emerald-400">{log}</span>
-                        </div>
-                      ))}
-                      {isBusy && (
-                        <div className="flex items-center gap-1.5 text-emerald-500 select-none animate-pulse shrink-0 font-bold mt-1">
-                          <span>&gt;</span>
-                          <span className="animate-ping">●</span>
-                          <span className="ml-1 text-xs text-emerald-500">Processing next logical step...</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  <div ref={terminalEndRef} />
-                </div>
-              </div>
-            )}
-
+            </div>
           </div>
         )}
       </div>
@@ -501,3 +423,4 @@ export default function DiagnosticsConsole({
     </div>
   );
 }
+

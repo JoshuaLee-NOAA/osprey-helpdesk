@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+const isServer = typeof window === "undefined";
+
 // Core environment variables required for Next.js and LLM Gateway startup
 const coreEnvSchema = z.object({
   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string().min(1, "Clerk Publishable Key is required"),
@@ -7,14 +9,16 @@ const coreEnvSchema = z.object({
   AI_GATEWAY_API_KEY: z.string().min(1, "Vercel AI Gateway Key is required"),
 });
 
-// Parse and validate core startup credentials
-const parsedCore = coreEnvSchema.safeParse(process.env);
-if (!parsedCore.success) {
-  console.error("❌ OSPREY STARTUP ERROR: Missing core credentials inside .env.local!");
-  console.error(JSON.stringify(parsedCore.error.format(), null, 2));
+// Parse and validate core startup credentials on server side
+if (isServer) {
+  const parsedCore = coreEnvSchema.safeParse(process.env);
+  if (!parsedCore.success) {
+    console.error("❌ OSPREY STARTUP ERROR: Missing core credentials inside .env.local!");
+    console.error(JSON.stringify(parsedCore.error.format(), null, 2));
+  }
 }
 
-export const coreConfig = parsedCore.success ? parsedCore.data : null;
+export const coreConfig = isServer ? coreEnvSchema.safeParse(process.env).data || null : null;
 
 /**
  * Validates and retrieves Supabase credentials.

@@ -14,13 +14,7 @@ export default async function Home() {
   const { userId } = await auth();
 
   if (userId) {
-    const user = await currentUser();
-    const role = user?.publicMetadata?.role;
-    if (role === "IT_Admin") {
-      redirect("/dashboard/hitl");
-    } else {
-      redirect("/portal");
-    }
+    redirect("/portal");
   }
 
   return (
@@ -82,9 +76,7 @@ export default async function Home() {
 
         {/* Supporting copy */}
         <p className="mb-12 max-w-xl text-base leading-relaxed text-muted-foreground md:text-lg">
-          Osprey&apos;s specialized
-          agents triage, ticket, and schedule — while every high-risk action
-          waits for a human&apos;s approval.
+          Osprey&apos;s specialized agents triage, ticket, schedule, and provision software seats autonomously and seamlessly.
         </p>
 
         {/* CTAs */}
