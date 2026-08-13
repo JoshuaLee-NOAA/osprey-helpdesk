@@ -108,16 +108,20 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
 
   const handleSessionChange = (id: string, sessionState: any, events?: readonly any[]) => {
     setThreads((prevThreads) => {
+      // Allow explicit reset requests to wipe stale session cursors
+      if (sessionState === null || sessionState === "reset") {
+        const updated = prevThreads.map((t) =>
+          t.id === id ? { ...t, sessionState: undefined, events: undefined } : t
+        );
+        saveThreads(updated);
+        return updated;
+      }
+
       const existing = prevThreads.find((t) => t.id === id);
       
       const updatedSession = sessionState ?? existing?.sessionState;
       const updatedEvents = events ?? existing?.events;
 
-      // Prevent overwriting valid historical sessions with initial/blank ones during socket bootstrapping
-      if (existing?.sessionState && !sessionState?.sessionId) {
-        return prevThreads;
-      }
-      
       // Avoid infinite React re-render loops if state is structurally identical
       if (
         JSON.stringify(existing?.sessionState) === JSON.stringify(updatedSession) &&
@@ -240,6 +244,10 @@ function ChatInterfaceContent({
         if (!res.ok) {
           const cloned = res.clone();
           const text = await cloned.text().catch(() => "");
+          if (text.includes("SESSION_NOT_RESUMABLE") || text.includes("cannot be resumed") || res.status === 404) {
+            console.warn("[Eve Agent Fetch Interceptor] Suppressing SESSION_NOT_RESUMABLE / 404 toast for automatic session re-initialization.");
+            return res;
+          }
           console.error(`[Eve Agent HTTP ${res.status} Error Details]:`, text);
           toast.error(`Agent Error (${res.status}): ${text || res.statusText}`, { duration: 10000 });
         }
@@ -265,9 +273,19 @@ function ChatInterfaceContent({
     },
     onError: (err) => {
       console.error("[EveAgent onError Event]:", err);
-      toast.error(`Agent Error: ${err.message || String(err)}`, {
-        duration: 8000,
-      });
+      const errMsg = err.message || String(err);
+      if (
+        errMsg.includes("Session is not active") ||
+        errMsg.includes("cannot be resumed") ||
+        errMsg.includes("SESSION_NOT_RESUMABLE")
+      ) {
+        console.warn("[ChatInterface] Stale session detected in local cache. Resetting thread session state...");
+        onSessionChange(activeThread?.id || "", null, undefined);
+      } else {
+        toast.error(`Agent Error: ${errMsg}`, {
+          duration: 8000,
+        });
+      }
     },
   });
 
@@ -343,8 +361,23 @@ function ChatInterfaceContent({
 
     try {
       await agent.send({ message: trimmed });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to send message to Osprey agent:", error);
+      const errMsg = error?.message || String(error);
+      if (
+        errMsg.includes("Session is not active") ||
+        errMsg.includes("cannot be resumed") ||
+        errMsg.includes("SESSION_NOT_RESUMABLE")
+      ) {
+        console.warn("[ChatInterface] Session expired on send. Resetting and retrying message...");
+        onSessionChange(activeThread?.id || "", null, undefined);
+        agent.reset();
+        try {
+          await agent.send({ message: trimmed });
+        } catch (retryErr) {
+          console.error("Retry send failed:", retryErr);
+        }
+      }
     }
   };
 
