@@ -1,5 +1,6 @@
 "use server";
 
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { searchJiraIssues } from "@/lib/jira";
 
 export interface TicketItem {
@@ -11,14 +12,23 @@ export interface TicketItem {
   severity: string;
 }
 
-export async function getJiraTicketsAction(email: string) {
+export async function getJiraTicketsAction(clientEmail?: string) {
   try {
-    if (!email) {
-      return { success: false, error: "No email provided." };
+    const { userId } = await auth();
+    if (!userId) {
+      return { success: false, error: "Unauthorized access: Active user session required." };
     }
 
-    // Retrieve all issues containing the user's email
-    const allIssues = await searchJiraIssues(email);
+    const user = await currentUser();
+    const authenticatedEmail = user?.emailAddresses?.[0]?.emailAddress;
+    const targetEmail = authenticatedEmail || clientEmail;
+
+    if (!targetEmail) {
+      return { success: false, error: "No authenticated email associated with session." };
+    }
+
+    // Retrieve all Jira issues containing the authenticated user's email
+    const allIssues = await searchJiraIssues(targetEmail);
 
     // Filter into active and resolved states
     const activeStates = ["open", "to do", "in progress", "pending approval", "under review"];

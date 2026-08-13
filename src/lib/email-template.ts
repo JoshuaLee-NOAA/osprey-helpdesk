@@ -13,6 +13,31 @@ export interface EmailTemplateOptions {
   recipientName?: string;
 }
 
+/**
+ * Escapes unsafe HTML characters to prevent XSS and HTML injection in email templates.
+ */
+function escapeHtml(str: string): string {
+  if (!str) return "";
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+/**
+ * Validates and sanitizes URLs for action buttons to prevent javascript: or data: URI injection.
+ */
+function sanitizeUrl(url: string): string {
+  if (!url) return "#";
+  const trimmed = url.trim();
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.startsWith("mailto:")) {
+    return escapeHtml(trimmed);
+  }
+  return "#";
+}
+
 export function buildBrandedEmailHtml(options: EmailTemplateOptions): string {
   const {
     title,
@@ -23,6 +48,10 @@ export function buildBrandedEmailHtml(options: EmailTemplateOptions): string {
     actionButton,
     recipientName,
   } = options;
+
+  const safeTitle = escapeHtml(title);
+  const safeBadgeText = escapeHtml(badgeText);
+  const safeRecipientName = recipientName ? escapeHtml(recipientName) : "";
 
   const badgeColors = {
     success: { bg: "#ECFDF5", text: "#065F46", border: "#A7F3D0" },
@@ -39,10 +68,10 @@ export function buildBrandedEmailHtml(options: EmailTemplateOptions): string {
               (item) => `
             <tr>
               <td style="padding: 10px 14px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 11px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #EDF2F7; width: 30%;">
-                ${item.label}
+                ${escapeHtml(item.label)}
               </td>
               <td style="padding: 10px 14px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 600; color: #0F172A; border-bottom: 1px solid #EDF2F7;">
-                ${item.value}
+                ${escapeHtml(item.value)}
               </td>
             </tr>
           `
@@ -55,8 +84,8 @@ export function buildBrandedEmailHtml(options: EmailTemplateOptions): string {
   const buttonHtml = actionButton
     ? `
       <div style="margin-top: 24px; margin-bottom: 8px; text-align: center;">
-        <a href="${actionButton.url}" target="_blank" style="display: inline-block; background-color: #003087; color: #FFFFFF; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 700; text-decoration: none; padding: 12px 28px; border-radius: 9999px; box-shadow: 0 2px 4px rgba(0, 48, 135, 0.2);">
-          ${actionButton.label}
+        <a href="${sanitizeUrl(actionButton.url)}" target="_blank" style="display: inline-block; background-color: #003087; color: #FFFFFF; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 700; text-decoration: none; padding: 12px 28px; border-radius: 9999px; box-shadow: 0 2px 4px rgba(0, 48, 135, 0.2);">
+          ${escapeHtml(actionButton.label)}
         </a>
       </div>
     `
@@ -68,7 +97,7 @@ export function buildBrandedEmailHtml(options: EmailTemplateOptions): string {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${title}</title>
+  <title>${safeTitle}</title>
 </head>
 <body style="margin: 0; padding: 0; background-color: #F1F5F9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #F1F5F9; padding: 24px 12px;">
@@ -87,7 +116,7 @@ export function buildBrandedEmailHtml(options: EmailTemplateOptions): string {
                       OSPREY HELPDESK
                     </span>
                     <h1 style="margin: 0; font-size: 20px; font-weight: 800; color: #FFFFFF; letter-spacing: -0.3px; line-height: 1.2;">
-                      ${title}
+                      ${safeTitle}
                     </h1>
                   </td>
                 </tr>
@@ -101,13 +130,13 @@ export function buildBrandedEmailHtml(options: EmailTemplateOptions): string {
               <!-- Status Badge -->
               <div style="margin-bottom: 18px;">
                 <span style="display: inline-block; background-color: ${badgeColors.bg}; color: ${badgeColors.text}; border: 1px solid ${badgeColors.border}; font-family: 'SF Mono', SFMono-Regular, Consolas, monospace; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; padding: 4px 10px; border-radius: 9999px;">
-                  ${badgeText}
+                  ${safeBadgeText}
                 </span>
               </div>
 
               ${
-                recipientName
-                  ? `<p style="margin: 0 0 14px 0; font-size: 14px; font-weight: 600; color: #1E293B;">Hello ${recipientName},</p>`
+                safeRecipientName
+                  ? `<p style="margin: 0 0 14px 0; font-size: 14px; font-weight: 600; color: #1E293B;">Hello ${safeRecipientName},</p>`
                   : ""
               }
 
