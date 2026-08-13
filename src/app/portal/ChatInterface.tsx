@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -227,14 +228,46 @@ function ChatInterfaceContent({
     }
   }, [user.email]);
 
+  useEffect(() => {
+    const originalFetch = window.fetch;
+    window.fetch = async (...args) => {
+      const url = typeof args[0] === "string" ? args[0] : (args[0] instanceof Request ? args[0].url : String(args[0]));
+      const isAgentCall = url.includes("/_eve") || url.includes("/agent") || url.includes("eve");
+      if (isAgentCall) {
+        console.log("[Eve Agent Fetch Interceptor] Requesting:", url);
+        const res = await originalFetch(...args);
+        console.log("[Eve Agent Fetch Interceptor] Response Status:", res.status, res.statusText);
+        if (!res.ok) {
+          const cloned = res.clone();
+          const text = await cloned.text().catch(() => "");
+          console.error(`[Eve Agent HTTP ${res.status} Error Details]:`, text);
+          toast.error(`Agent Error (${res.status}): ${text || res.statusText}`, { duration: 10000 });
+        }
+        return res;
+      }
+      return originalFetch(...args);
+    };
+    return () => {
+      window.fetch = originalFetch;
+    };
+  }, []);
+
   const agent = useEveAgent({
     initialSession: activeThread?.sessionState,
     initialEvents: activeThread?.events,
     headers: async () => {
       const token = await getToken();
+      console.log("[ChatInterface] Auth token retrieved:", token ? `Present (${token.slice(0, 15)}...)` : "MISSING!");
       return {
         authorization: token ? `Bearer ${token}` : "",
+        "x-clerk-authorization": token ? `Bearer ${token}` : "",
       };
+    },
+    onError: (err) => {
+      console.error("[EveAgent onError Event]:", err);
+      toast.error(`Agent Error: ${err.message || String(err)}`, {
+        duration: 8000,
+      });
     },
   });
 

@@ -6,7 +6,9 @@ const isServer = typeof window === "undefined";
 const coreEnvSchema = z.object({
   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string().min(1, "Clerk Publishable Key is required"),
   CLERK_SECRET_KEY: z.string().min(1, "Clerk Secret Key is required"),
-  AI_GATEWAY_API_KEY: z.string().min(1, "Vercel AI Gateway Key is required"),
+  AI_GATEWAY_API_KEY: z.string().optional(),
+  GOOGLE_GENERATIVE_AI_API_KEY: z.string().optional(),
+  GEMINI_API_KEY: z.string().optional(),
 });
 
 // Parse and validate core startup credentials on server side
