@@ -763,23 +763,7 @@ function SubagentToolCard({ part }: { readonly part: EveDynamicToolPart }) {
 
 function hasVisibleContent(message: EveMessage): boolean {
   if (message.role === "user") return true;
-
-  return message.parts.some((part) => {
-    switch (part.type) {
-      case "text":
-        return part.text.trim().length > 0;
-      case "reasoning":
-        return part.text.trim().length > 0;
-      case "dynamic-tool":
-        return true;
-      case "authorization":
-        return true;
-      case "file":
-        return true;
-      default:
-        return false;
-    }
-  });
+  return message.parts.length > 0;
 }
 
 function MarkdownRenderer({ text }: { readonly text: string }) {
