@@ -248,6 +248,19 @@ function ChatInterfaceContent({
             console.warn("[Eve Agent Fetch Interceptor] Suppressing SESSION_NOT_RESUMABLE / 404 toast for automatic session re-initialization.");
             return res;
           }
+          if (text.includes("AI Gateway rejected") || text.includes("MODEL_CALL_FAILED")) {
+            console.error(
+              "%c[AI Gateway Auth Error Details]",
+              "color: red; font-size: 14px; font-weight: bold;",
+              {
+                url,
+                status: res.status,
+                statusText: res.statusText,
+                body: text,
+                hint: "Check /api/debug/gateway-status to verify AI_GATEWAY_API_KEY environment variable presence on server."
+              }
+            );
+          }
           console.error(`[Eve Agent HTTP ${res.status} Error Details]:`, text);
           toast.error(`Agent Error (${res.status}): ${text || res.statusText}`, { duration: 10000 });
         }
@@ -276,9 +289,19 @@ function ChatInterfaceContent({
         "x-clerk-authorization": token ? `Bearer ${token}` : "",
       };
     },
-    onError: (err) => {
-      console.error("[EveAgent onError Event]:", err);
-      const errMsg = err.message || String(err);
+    onError: (err: any) => {
+      console.error(
+        "[EveAgent onError Event Detailed Log]:",
+        {
+          name: err?.name,
+          message: err?.message,
+          code: err?.code,
+          cause: err?.cause,
+          stack: err?.stack,
+          fullError: err
+        }
+      );
+      const errMsg = err?.message || String(err);
       if (
         errMsg.includes("Session is not active") ||
         errMsg.includes("cannot be resumed") ||
