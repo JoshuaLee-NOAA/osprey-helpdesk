@@ -263,6 +263,11 @@ function ChatInterfaceContent({
   const agent = useEveAgent({
     initialSession: activeThread?.sessionState,
     initialEvents: activeThread?.events,
+    onSessionChange: (session) => {
+      if (activeThread?.id && session) {
+        onSessionChange(activeThread.id, session, undefined);
+      }
+    },
     headers: async () => {
       const token = await getToken();
       console.log("[ChatInterface] Auth token retrieved:", token ? `Present (${token.slice(0, 15)}...)` : "MISSING!");
@@ -288,13 +293,6 @@ function ChatInterfaceContent({
       }
     },
   });
-
-  // Continually synchronize latest session and events to the master localStorage
-  useEffect(() => {
-    if (activeThread && (agent.session || (agent.events && agent.events.length > 0))) {
-      onSessionChange(activeThread.id, agent.session, agent.events);
-    }
-  }, [agent.session, agent.events, activeThread?.id, onSessionChange]);
 
   const isBusy = agent.status === "submitted" || agent.status === "streaming";
   const messages = agent.data.messages;
