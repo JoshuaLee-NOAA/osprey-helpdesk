@@ -281,6 +281,12 @@ function ChatInterfaceContent({
         onSessionChange(activeThread.id, session, undefined);
       }
     },
+    onEvent: (event: any) => {
+      console.log(`[EveAgent Stream Event] (${event?.type}):`, event);
+    },
+    onFinish: (result: any) => {
+      console.log("[EveAgent Turn Finished]:", result);
+    },
     headers: async () => {
       const token = await getToken();
       console.log("[ChatInterface] Auth token retrieved:", token ? `Present (${token.slice(0, 15)}...)` : "MISSING!");
