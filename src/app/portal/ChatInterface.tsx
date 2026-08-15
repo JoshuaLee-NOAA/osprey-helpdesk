@@ -106,7 +106,7 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
     setActiveThreadId(id);
   };
 
-  const handleSessionChange = (id: string, sessionState: any, events?: readonly any[]) => {
+  const handleSessionChange = useCallback((id: string, sessionState: any, events?: readonly any[]) => {
     setThreads((prevThreads) => {
       // Allow explicit reset requests to wipe stale session cursors
       if (sessionState === null || sessionState === "reset") {
@@ -118,14 +118,15 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
       }
 
       const existing = prevThreads.find((t) => t.id === id);
-      
-      const updatedSession = sessionState ?? existing?.sessionState;
-      const updatedEvents = events ?? existing?.events;
+      if (!existing) return prevThreads;
+
+      const updatedSession = sessionState !== undefined ? sessionState : existing.sessionState;
+      const updatedEvents = events !== undefined ? events : existing.events;
 
       // Avoid infinite React re-render loops if state is structurally identical
       if (
-        JSON.stringify(existing?.sessionState) === JSON.stringify(updatedSession) &&
-        JSON.stringify(existing?.events) === JSON.stringify(updatedEvents)
+        JSON.stringify(existing.sessionState) === JSON.stringify(updatedSession) &&
+        JSON.stringify(existing.events) === JSON.stringify(updatedEvents)
       ) {
         return prevThreads;
       }
@@ -136,7 +137,7 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
       saveThreads(updated);
       return updated;
     });
-  };
+  }, [saveThreads]);
 
   const handleUpdateThreadTitle = (id: string, firstMessage: string) => {
     setThreads((prevThreads) => {
@@ -275,17 +276,21 @@ function ChatInterfaceContent({
 
   const agent = useEveAgent({
     initialSession: activeThread?.sessionState,
-    initialEvents: activeThread?.events,
+    initialEvents: activeThread?.events ?? [],
     onSessionChange: (session) => {
-      if (activeThread?.id && session) {
-        onSessionChange(activeThread.id, session, undefined);
+      console.log("[EveAgent onSessionChange]:", session);
+      if (!session && activeThread?.id) {
+        onSessionChange(activeThread.id, null, undefined);
       }
     },
     onEvent: (event: any) => {
       console.log(`[EveAgent Stream Event] (${event?.type}):`, event);
     },
-    onFinish: (result: any) => {
-      console.log("[EveAgent Turn Finished]:", result);
+    onFinish: (snapshot: any) => {
+      console.log("[EveAgent Turn Finished] Snapshot:", snapshot);
+      if (activeThread?.id && snapshot) {
+        onSessionChange(activeThread.id, snapshot.session, snapshot.events);
+      }
     },
     headers: async () => {
       const token = await getToken();
@@ -325,6 +330,7 @@ function ChatInterfaceContent({
 
   const isBusy = agent.status === "submitted" || agent.status === "streaming";
   const messages = agent.data.messages;
+  console.log("[ChatInterface Render] Messages count:", messages.length, "Agent status:", agent.status);
   const visibleMessages = messages.filter(hasVisibleContent);
   const isEmpty = visibleMessages.length === 0;
 
@@ -672,8 +678,10 @@ function MessagePart({ part, isUser }: { readonly part: EveMessagePart; readonly
       );
     }
 
-    case "reasoning":
-      return null;
+    case "reasoning": {
+      if (!part.text) return null;
+      return <ReasoningPart text={part.text} />;
+    }
 
     case "file":
       return (
@@ -692,15 +700,34 @@ function MessagePart({ part, isUser }: { readonly part: EveMessagePart; readonly
       );
 
     case "dynamic-tool":
-      return <SubagentToolCard part={part} />;
+      return <SubagentToolCard part={part as any} />;
 
-    default:
+    default: {
+      const anyPart = part as any;
+      const typeStr = String(anyPart?.type || "");
+      if (
+        typeStr.includes("tool") ||
+        typeStr.includes("subagent") ||
+        anyPart?.toolName ||
+        anyPart?.name
+      ) {
+        return <SubagentToolCard part={anyPart} />;
+      }
+
+      if (anyPart?.text) {
+        return (
+          <div className="bg-background text-foreground border border-border rounded-2xl rounded-tl-none p-3 text-sm shadow-xs">
+            <MarkdownRenderer text={anyPart.text} />
+          </div>
+        );
+      }
       return null;
+    }
   }
 }
 
 const TOOL_STATE_META: Record<
-  EveDynamicToolPart["state"],
+  string,
   { label: string; icon: typeof Clock | null; className: string }
 > = {
   "input-streaming": { label: "Pending", icon: Clock, className: "text-muted-foreground" },
@@ -712,12 +739,13 @@ const TOOL_STATE_META: Record<
   "output-denied": { label: "Denied", icon: XCircle, className: "text-orange-600" },
 };
 
-function SubagentToolCard({ part }: { readonly part: EveDynamicToolPart }) {
-  const meta = TOOL_STATE_META[part.state];
+function SubagentToolCard({ part }: { readonly part: any }) {
+  const state = part.state || (part.output || part.result ? "output-available" : "input-available");
+  const meta = TOOL_STATE_META[state] || TOOL_STATE_META["input-available"];
   const Icon = meta.icon;
-  const kind = part.toolMetadata?.eve?.kind;
-  const displayName = part.toolMetadata?.eve?.name ?? part.toolName;
-  const isSubagent = kind === "subagent-call";
+  const kind = part.toolMetadata?.eve?.kind || part.kind || part.type;
+  const displayName = part.toolMetadata?.eve?.name || part.toolName || part.name || (typeof kind === "string" ? kind : "Specialist Agent");
+  const isSubagent = typeof kind === "string" && (kind.includes("subagent") || kind.includes("jira") || kind.includes("workspace"));
 
   return (
     <div className="flex flex-col gap-1.5 my-1.5 w-full min-w-[300px] sm:min-w-[420px]">
@@ -735,7 +763,7 @@ function SubagentToolCard({ part }: { readonly part: EveDynamicToolPart }) {
               {displayName}
             </span>
             <span className={cn("flex items-center gap-1 text-xs font-semibold whitespace-nowrap shrink-0", meta.className)}>
-              {part.state === "input-available" ? (
+              {state === "input-available" ? (
                 <span className="relative flex h-2 w-2 shrink-0 mr-1.5">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-[#005F9E]"></span>
@@ -747,12 +775,12 @@ function SubagentToolCard({ part }: { readonly part: EveDynamicToolPart }) {
             </span>
           </CardTitle>
         </CardHeader>
-        {(part.state === "output-available" || part.state === "output-error") && (
+        {(state === "output-available" || state === "output-error") && (part.output || part.result || part.errorText) && (
           <CardContent className="pt-0">
             <pre className="text-xs bg-muted/60 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap text-muted-foreground">
-              {part.state === "output-error"
-                ? part.errorText
-                : JSON.stringify(part.output, null, 2)}
+              {state === "output-error"
+                ? part.errorText || "Execution error"
+                : JSON.stringify(part.output || part.result, null, 2)}
             </pre>
           </CardContent>
         )}
@@ -763,7 +791,12 @@ function SubagentToolCard({ part }: { readonly part: EveDynamicToolPart }) {
 
 function hasVisibleContent(message: EveMessage): boolean {
   if (message.role === "user") return true;
-  return message.parts.length > 0;
+  return message.parts.some((part) => {
+    if (part.type === "step-start") return false;
+    if (part.type === "text") return part.text.length > 0;
+    if (part.type === "reasoning") return part.text.length > 0;
+    return true;
+  });
 }
 
 function MarkdownRenderer({ text }: { readonly text: string }) {
