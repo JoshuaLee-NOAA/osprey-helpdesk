@@ -37,7 +37,6 @@ import { cn } from "@/lib/utils";
 
 import HistorySidebar, { type Thread } from "./components/HistorySidebar";
 import DiagnosticsConsole from "./components/DiagnosticsConsole";
-import { getJiraTicketsAction, type TicketItem } from "./actions";
 
 interface ChatInterfaceProps {
   readonly user: {
@@ -221,18 +220,6 @@ function ChatInterfaceContent({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const { getToken } = useAuth();
 
-  const [activeTickets, setActiveTickets] = useState<TicketItem[]>([]);
-  const [resolvedTickets, setResolvedTickets] = useState<TicketItem[]>([]);
-
-  const fetchTickets = useCallback(async () => {
-    if (!user.email) return;
-    const res = await getJiraTicketsAction(user.email);
-    if (res.success && res.activeTickets && res.resolvedTickets) {
-      setActiveTickets(res.activeTickets as TicketItem[]);
-      setResolvedTickets(res.resolvedTickets as TicketItem[]);
-    }
-  }, [user.email]);
-
   useEffect(() => {
     const originalFetch = window.fetch;
     window.fetch = async (...args) => {
@@ -334,19 +321,7 @@ function ChatInterfaceContent({
   const visibleMessages = messages.filter(hasVisibleContent);
   const isEmpty = visibleMessages.length === 0;
 
-  const prevBusyRef = useRef(isBusy);
 
-  useEffect(() => {
-    fetchTickets();
-  }, [fetchTickets]);
-
-  useEffect(() => {
-    if (prevBusyRef.current && !isBusy) {
-      console.log("[ChatInterface] Agent completed conversational turn. Re-fetching live Jira tickets...");
-      fetchTickets();
-    }
-    prevBusyRef.current = isBusy;
-  }, [isBusy, fetchTickets]);
 
   useEffect(() => {
     const container = scrollContainerRef.current;
@@ -414,10 +389,6 @@ function ChatInterfaceContent({
     }
   };
 
-  const handleTicketClick = (summary: string, key: string) => {
-    handleSend(`Please give me a status update on ticket ${key}: ${summary}`);
-  };
-
   return (
     <div className="flex flex-col h-full w-full bg-slate-50/50 overflow-hidden">
       {/* Full-width Top Header */}
@@ -463,7 +434,7 @@ function ChatInterfaceContent({
               "rounded-lg h-9 w-9 shrink-0 transition-colors",
               isRightOpen ? "text-[#005F9E] bg-slate-100" : "text-muted-foreground hover:text-foreground"
             )}
-            title={isRightOpen ? "Hide Service Tickets & Logs" : "Show Service Tickets & Logs"}
+            title={isRightOpen ? "Hide Agent & Tool Activity" : "Show Agent & Tool Activity"}
           >
             {isRightOpen ? (
               <PanelRightClose className="h-5 w-5 text-[#005F9E]" />
@@ -584,9 +555,6 @@ function ChatInterfaceContent({
           isOpen={isRightOpen} 
           messages={messages}
           isBusy={isBusy}
-          onTicketClick={handleTicketClick}
-          activeTickets={activeTickets}
-          resolvedTickets={resolvedTickets}
         />
       </div>
     </div>
